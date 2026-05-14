@@ -1,105 +1,86 @@
 local RunService = game:GetService("RunService")
-
--- UI LIBRARY
-local library = loadstring(game:HttpGet(
-    "https://raw.githubusercontent.com/i77lhm/vaderpaste/refs/heads/main/library.lua"
-))()
-
-local flags = library.flags
-
--- WINDOW
-local window = library:window({
-    name = "reaper.lol",
-    size = UDim2.fromOffset(500, 650)
-})
-
--- TABS
-local visuals = window:tab({
-    name = "Visuals"
-})
-
-local combat = window:tab({
-    name = "Combat"
-})
-
-local misc = window:tab({
-    name = "Misc"
-})
-
--- SECTIONS
-local espSection = visuals:section({
-    name = "ESP"
-})
-
-local aimSection = combat:section({
-    name = "Aim"
-})
-
-local miscSection = misc:section({
-    name = "Misc"
-})
-
--- ESP
-espSection:toggle({
-    name = "Enable ESP",
-    flag = "visuals_esp",
-    default = false
-})
-
-espSection:toggle({
-    name = "Boxes",
-    flag = "visuals_boxes",
+local chamsToggle = elementsSection:toggle({
+    name = "Chams",
+    flag = "visuals_chams",
     default = true
 })
 
-espSection:toggle({
-    name = "Names",
-    flag = "visuals_names",
-    default = true
-})
-
-espSection:colorpicker({
-    name = "ESP Color",
-    flag = "visuals_esp_color",
+chamsToggle:colorpicker({
+    flag = "visuals_chams_color",
     color = Color3.fromRGB(255, 0, 0)
 })
 
--- AIMBOT
-aimSection:toggle({
-    name = "Enable Aimbot",
-    flag = "combat_aimbot",
-    default = false
-})
-
-aimSection:slider({
-    name = "FOV",
-    flag = "combat_fov",
-    default = 120,
-    min = 0,
-    max = 500,
-    interval = 1
-})
-
--- MENU KEYBIND
-miscSection:keybind({
-    name = "UI Bind",
-    flag = "menu_bind",
-    default = Enum.KeyCode.End,
-
-    callback = function(state)
-        print("Menu keybind:", state)
+elementsSection:dropdown({
+    name = "Cham Material",
+    flag = "visuals_chams_material",
+    items = {
+        "Plastic",
+        "ForceField",
+        "Neon",
+        "Glass",
+        "SmoothPlastic"
+    },
+    multi = false,
+    callback = function(option)
+        print(option)
     end
 })
 
--- LOAD ESP MODULE
+optionsSection:toggle({
+    name = "Team Check",
+    flag = "visuals_teamcheck",
+    default = false
+})
+
+optionsSection:toggle({
+    name = "Occluded Check",
+    flag = "visuals_occluded",
+    default = false
+})
+
+optionsSection:slider({
+    name = "Render Distance",
+    suffix = " studs",
+    flag = "visuals_distance",
+    default = 2500,
+    min = 1,
+    max = 5000,
+    interval = 1
+})
+
+settingsSection:button({
+    name = "Unload",
+    callback = function()
+
+        for _, connection in pairs(getgenv().reaper_connections) do
+            pcall(function()
+                connection:Disconnect()
+            end)
+        end
+
+        for _, object in pairs(getgenv().reaper_objects) do
+            pcall(function()
+                object:Destroy()
+            end)
+        end
+
+        if library.base then
+            library.base:Destroy()
+        end
+
+        getgenv().reaper_connections = {}
+        getgenv().reaper_objects = {}
+
+    end
+})
+
 local ESP = loadstring(game:HttpGet(
     "https://reaper-lol.pages.dev/features/esp.lua"
 ))()
 
 ESP:Init(flags)
 
--- LOOP
-RunService.RenderStepped:Connect(function()
+local connection = RunService.RenderStepped:Connect(function()
 
     if flags.visuals_esp then
         ESP:Update()
@@ -108,3 +89,5 @@ RunService.RenderStepped:Connect(function()
     end
 
 end)
+
+table.insert(getgenv().reaper_connections, connection)
