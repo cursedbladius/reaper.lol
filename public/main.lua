@@ -1,14 +1,16 @@
--- main.lua
-
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
 local LocalPlayer = Players.LocalPlayer
 
+print("main loaded")
+
 -- UI LIBRARY
 local library = loadstring(game:HttpGet(
     "https://raw.githubusercontent.com/i77lhm/vaderpaste/refs/heads/main/library.lua"
 ))()
+
+print("library loaded")
 
 local flags = library.flags
 
@@ -17,6 +19,8 @@ local window = library:window({
     name = "reaper.lol",
     size = UDim2.fromOffset(500, 650)
 })
+
+print("window created")
 
 -- TABS
 local visuals = window:tab({name = "Visuals"})
@@ -55,12 +59,6 @@ espSection:toggle({
     default = true
 })
 
-espSection:toggle({
-    name = "Tracers",
-    flag = "visuals_tracers",
-    default = false
-})
-
 espSection:colorpicker({
     name = "ESP Color",
     flag = "visuals_esp_color",
@@ -83,34 +81,26 @@ aimSection:slider({
     interval = 1
 })
 
-aimSection:slider({
-    name = "Smoothness",
-    flag = "combat_smoothness",
-    default = 5,
-    min = 1,
-    max = 20,
-    interval = 1
-})
+-- MENU TOGGLE
+local menuVisible = true
 
-aimSection:dropdown({
-    name = "Hit Part",
-    flag = "combat_hitpart",
-    items = {"Head", "HumanoidRootPart"},
-    multi = false
-})
-
--- MENU KEYBIND
 miscSection:keybind({
     name = "UI Bind",
     flag = "menu_bind",
     default = Enum.KeyCode.End,
 
     callback = function()
-        print("Menu toggled")
+
+        menuVisible = not menuVisible
+
+        if library.base then
+            library.base.Enabled = menuVisible
+        end
+
     end
 })
 
--- LOAD MODULES
+-- LOAD ESP MODULE
 local ESP = loadstring(game:HttpGet(
     "https://cdn.getbliss.win/features/esp.lua"
 ))()
