@@ -1,74 +1,76 @@
 local Players = game:GetService("Players")
-
-local LocalPlayer = Players.LocalPlayer
-
-local ESP = {}
-ESP.Objects = {}
-
-function ESP:Init(flagsTable)
-    self.Flags = flagsTable
-end
-
-function ESP:Create(player)
-
-    if self.Objects[player] then
-        return
-    end
-
-    local character = player.Character
-
-    if not character then
-        return
-    end
-
-    local highlight = Instance.new("Highlight")
-
-    highlight.FillColor = Color3.fromRGB(255,0,0)
-    highlight.OutlineColor = Color3.fromRGB(255,255,255)
-
-    highlight.FillTransparency = 0.5
-    highlight.OutlineTransparency = 0
-
-    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-
-    highlight.Adornee = character
-    highlight.Parent = game.CoreGui
-
-    self.Objects[player] = highlight
-
-end
-
-function ESP:Hide()
-
-    for _, highlight in pairs(self.Objects) do
-        highlight.Enabled = false
-    end
-
-end
-
-function ESP:Update()
-
-    for _, player in pairs(Players:GetPlayers()) do
-
-        if player == LocalPlayer then
+        if humanoid.Health <= 0 then
             continue
         end
 
-        local character = player.Character
+        if self.Flags.visuals_teamcheck then
+            if player.Team == LocalPlayer.Team then
 
-        if not character then
-            continue
+                local existing = self.Objects[player]
+
+                if existing then
+                    existing.Highlight.Enabled = false
+                    existing.Billboard.Enabled = false
+                end
+
+                continue
+            end
         end
 
-        if not self.Objects[player] then
-            self:Create(player)
+        local localCharacter = LocalPlayer.Character
+
+        if localCharacter and localCharacter:FindFirstChild("HumanoidRootPart") then
+
+            local distance = (
+                localCharacter.HumanoidRootPart.Position - root.Position
+            ).Magnitude
+
+            if distance > (self.Flags.visuals_distance or 2500) then
+
+                local existing = self.Objects[player]
+
+                if existing then
+                    existing.Highlight.Enabled = false
+                    existing.Billboard.Enabled = false
+                end
+
+                continue
+            end
+
         end
 
-        local highlight = self.Objects[player]
+        self:Create(player)
 
-        if highlight then
-            highlight.Enabled = self.Flags.visuals_esp
+        local objects = self.Objects[player]
+
+        if self.Flags.visuals_occluded then
+
+            if not self:IsVisible(character) then
+                objects.Highlight.Enabled = false
+                objects.Billboard.Enabled = false
+                continue
+            end
+
         end
+
+        objects.Highlight.Enabled = self.Flags.visuals_chams
+        objects.Highlight.FillColor = self.Flags.visuals_chams_color or Color3.fromRGB(255,0,0)
+        objects.Highlight.OutlineColor = self.Flags.visuals_boxes_color or Color3.fromRGB(255,255,255)
+
+        local materialName = self.Flags.visuals_chams_material or "Plastic"
+        local material = MaterialMap[materialName]
+
+        if material then
+            for _, part in pairs(character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.Material = material
+                end
+            end
+        end
+
+        objects.Billboard.Enabled = self.Flags.visuals_names
+        objects.Text.Text = player.Name
+        objects.Text.TextColor3 = self.Flags.visuals_names_color or Color3.fromRGB(255,255,255)
 
     end
 
@@ -76,11 +78,8 @@ end
 
 Players.PlayerRemoving:Connect(function(player)
 
-    local obj = ESP.Objects[player]
-
-    if obj then
-        obj:Destroy()
-        ESP.Objects[player] = nil
+    if ESP.Objects[player] then
+        ESP:Remove(player)
     end
 
 end)
