@@ -80,28 +80,29 @@ function ESP:Update()
             continue
         end
 
-        -- SIMPLE STATIC SIZE
         local width = 60
         local height = 100
 
         -- BOX
         drawings.Box.Size = Vector2.new(width, height)
+
         drawings.Box.Position = Vector2.new(
             position.X - width / 2,
             position.Y - height / 2
         )
 
-        drawings.Box.Color = Color3.fromRGB(255, 0, 0)
+        drawings.Box.Color = self.Flags.visuals_esp_color or Color3.fromRGB(255,0,0)
         drawings.Box.Visible = self.Flags.visuals_boxes
 
         -- NAME
         drawings.Name.Text = player.Name
+
         drawings.Name.Position = Vector2.new(
             position.X,
             position.Y - height / 2 - 15
         )
 
-        drawings.Name.Color = Color3.fromRGB(255, 255, 255)
+        drawings.Name.Color = Color3.fromRGB(255,255,255)
         drawings.Name.Visible = self.Flags.visuals_names
 
     end
