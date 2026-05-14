@@ -1,5 +1,3 @@
--- esp.lua
-
 local Players = game:GetService("Players")
 local Camera = workspace.CurrentCamera
 
@@ -113,7 +111,7 @@ function ESP:Update()
             position.Y - height / 2
         )
 
-        objects.Box.Color = self.Flags.visuals_esp_color.Color
+        objects.Box.Color = self.Flags.visuals_esp_color
         objects.Box.Visible = self.Flags.visuals_boxes
 
         -- NAME
@@ -123,7 +121,7 @@ function ESP:Update()
             position.Y - height / 2 - 16
         )
 
-        objects.Name.Color = self.Flags.visuals_esp_color.Color
+        objects.Name.Color = self.Flags.visuals_esp_color
         objects.Name.Visible = self.Flags.visuals_names
 
     end
