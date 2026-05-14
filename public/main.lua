@@ -70,7 +70,7 @@ elementsSection:dropdown({
 elementsSection:dropdown({
     name    = "Effect",
     flag    = "visuals_chams_effect",
-    items   = { "Static", "Pulse", "Rainbow", "Glitch" },
+    items   = { "Static", "Pulse", "Sparkles", "Fire", "Rainbow" },
     multi   = false,
     default = "Static",
 })
