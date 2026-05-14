@@ -1,114 +1,112 @@
-local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local Camera = workspace.CurrentCamera
 
-print("main loaded")
+local LocalPlayer = Players.LocalPlayer
 
--- UI LIBRARY
-local library = loadstring(game:HttpGet(
-    "https://raw.githubusercontent.com/i77lhm/vaderpaste/refs/heads/main/library.lua"
-))()
+local ESP = {}
+ESP.Objects = {}
 
-print("library loaded")
+function ESP:Init(flagsTable)
+    self.Flags = flagsTable
+end
 
-local flags = library.flags
+function ESP:Create(player)
 
--- WINDOW
-local window = library:window({
-    name = "reaper.lol",
-    size = UDim2.fromOffset(500, 650)
-})
-
-print("window created")
-
--- TABS
-local visuals = window:tab({
-    name = "Visuals"
-})
-
-local combat = window:tab({
-    name = "Combat"
-})
-
-local misc = window:tab({
-    name = "Misc"
-})
-
--- SECTIONS
-local espSection = visuals:section({
-    name = "ESP"
-})
-
-local aimSection = combat:section({
-    name = "Aim"
-})
-
-local miscSection = misc:section({
-    name = "Misc"
-})
-
--- ESP TOGGLES
-espSection:toggle({
-    name = "Enable ESP",
-    flag = "visuals_esp",
-    default = false
-})
-
-espSection:toggle({
-    name = "Boxes",
-    flag = "visuals_boxes",
-    default = true
-})
-
-espSection:toggle({
-    name = "Names",
-    flag = "visuals_names",
-    default = true
-})
-
--- AIMBOT
-aimSection:toggle({
-    name = "Enable Aimbot",
-    flag = "combat_aimbot",
-    default = false
-})
-
-aimSection:slider({
-    name = "FOV",
-    flag = "combat_fov",
-    default = 120,
-    min = 0,
-    max = 500,
-    interval = 1
-})
-
--- KEYBIND
-miscSection:keybind({
-    name = "UI Bind",
-    flag = "menu_bind",
-    default = Enum.KeyCode.End,
-
-    callback = function(state)
-        print("Keybind:", state)
-    end
-})
-
--- LOAD ESP MODULE
-local ESP = loadstring(game:HttpGet(
-    "https://cdn.getbliss.win/features/esp.lua"
-))()
-
-print("esp module loaded")
-
-ESP:Init(flags)
-
--- MAIN LOOP
-RunService.RenderStepped:Connect(function()
-
-    if flags.visuals_esp then
-        ESP:Update()
-    else
-        ESP:Hide()
+    if self.Objects[player] then
+        return
     end
 
-end)
+    local box = Drawing.new("Square")
+    box.Visible = false
+    box.Filled = false
+    box.Thickness = 1
 
-print("script fully loaded")
+    local name = Drawing.new("Text")
+    name.Visible = false
+    name.Center = true
+    name.Outline = true
+    name.Size = 13
+
+    self.Objects[player] = {
+        Box = box,
+        Name = name
+    }
+
+end
+
+function ESP:Hide()
+
+    for _, drawings in pairs(self.Objects) do
+        drawings.Box.Visible = false
+        drawings.Name.Visible = false
+    end
+
+end
+
+function ESP:Update()
+
+    for _, player in pairs(Players:GetPlayers()) do
+
+        if player == LocalPlayer then
+            continue
+        end
+
+        local character = player.Character
+
+        if not character then
+            continue
+        end
+
+        local root = character:FindFirstChild("HumanoidRootPart")
+        local humanoid = character:FindFirstChild("Humanoid")
+
+        if not root or not humanoid then
+            continue
+        end
+
+        if humanoid.Health <= 0 then
+            continue
+        end
+
+        self:Create(player)
+
+        local drawings = self.Objects[player]
+
+        local position, visible = Camera:WorldToViewportPoint(root.Position)
+
+        if not visible then
+            drawings.Box.Visible = false
+            drawings.Name.Visible = false
+            continue
+        end
+
+        local width = 60
+        local height = 100
+
+        -- BOX
+        drawings.Box.Size = Vector2.new(width, height)
+
+        drawings.Box.Position = Vector2.new(
+            position.X - width / 2,
+            position.Y - height / 2
+        )
+
+        drawings.Box.Color = Color3.fromRGB(255, 0, 0)
+        drawings.Box.Visible = self.Flags.visuals_boxes
+
+        -- NAME
+        drawings.Name.Text = player.Name
+
+        drawings.Name.Position = Vector2.new(
+            position.X,
+            position.Y - height / 2 - 15
+        )
+
+        drawings.Name.Color = Color3.fromRGB(255, 255, 255)
+        drawings.Name.Visible = self.Flags.visuals_names
+
+    end
+
+end
+
+return ESP
