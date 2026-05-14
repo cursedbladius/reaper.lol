@@ -1,4 +1,3 @@
-local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
 print("main loaded")
@@ -50,11 +49,7 @@ local miscSection = misc:section({
 espSection:toggle({
     name = "Enable ESP",
     flag = "visuals_esp",
-    default = false,
-
-    callback = function(bool)
-        print("ESP:", bool)
-    end
+    default = false
 })
 
 espSection:toggle({
@@ -67,12 +62,6 @@ espSection:toggle({
     name = "Names",
     flag = "visuals_names",
     default = true
-})
-
-espSection:colorpicker({
-    name = "ESP Color",
-    flag = "visuals_esp_color",
-    color = Color3.fromRGB(255, 0, 0)
 })
 
 -- AIMBOT
@@ -98,7 +87,7 @@ miscSection:keybind({
     default = Enum.KeyCode.End,
 
     callback = function(state)
-        print("Keybind pressed:", state)
+        print("Keybind:", state)
     end
 })
 
