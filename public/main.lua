@@ -1,8 +1,6 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
-local LocalPlayer = Players.LocalPlayer
-
 print("main loaded")
 
 -- UI LIBRARY
@@ -23,9 +21,17 @@ local window = library:window({
 print("window created")
 
 -- TABS
-local visuals = window:tab({name = "Visuals"})
-local combat = window:tab({name = "Combat"})
-local misc = window:tab({name = "Misc"})
+local visuals = window:tab({
+    name = "Visuals"
+})
+
+local combat = window:tab({
+    name = "Combat"
+})
+
+local misc = window:tab({
+    name = "Misc"
+})
 
 -- SECTIONS
 local espSection = visuals:section({
@@ -44,7 +50,11 @@ local miscSection = misc:section({
 espSection:toggle({
     name = "Enable ESP",
     flag = "visuals_esp",
-    default = false
+    default = false,
+
+    callback = function(bool)
+        print("ESP:", bool)
+    end
 })
 
 espSection:toggle({
@@ -81,22 +91,14 @@ aimSection:slider({
     interval = 1
 })
 
--- MENU TOGGLE
-local menuVisible = true
-
+-- KEYBIND
 miscSection:keybind({
     name = "UI Bind",
     flag = "menu_bind",
     default = Enum.KeyCode.End,
 
-    callback = function()
-
-        menuVisible = not menuVisible
-
-        if library.base then
-            library.base.Enabled = menuVisible
-        end
-
+    callback = function(state)
+        print("Keybind pressed:", state)
     end
 })
 
@@ -104,6 +106,8 @@ miscSection:keybind({
 local ESP = loadstring(game:HttpGet(
     "https://cdn.getbliss.win/features/esp.lua"
 ))()
+
+print("esp module loaded")
 
 ESP:Init(flags)
 
@@ -117,3 +121,5 @@ RunService.RenderStepped:Connect(function()
     end
 
 end)
+
+print("script fully loaded")
