@@ -1,4 +1,141 @@
 local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+
+local LocalPlayer = Players.LocalPlayer
+local Camera = Workspace.CurrentCamera
+
+local ESP = {}
+ESP.Objects = {}
+
+local MaterialMap = {
+    Plastic = Enum.Material.Plastic,
+    ForceField = Enum.Material.ForceField,
+    Neon = Enum.Material.Neon,
+    Glass = Enum.Material.Glass,
+    SmoothPlastic = Enum.Material.SmoothPlastic
+}
+
+function ESP:Init(flagsTable)
+    self.Flags = flagsTable
+end
+
+function ESP:IsVisible(character)
+
+    local root = character:FindFirstChild("HumanoidRootPart")
+
+    if not root then
+        return false
+    end
+
+    local origin = Camera.CFrame.Position
+    local direction = (root.Position - origin)
+
+    local params = RaycastParams.new()
+    params.FilterType = Enum.RaycastFilterType.Blacklist
+    params.FilterDescendantsInstances = {
+        LocalPlayer.Character,
+        character
+    }
+
+    local result = Workspace:Raycast(origin, direction, params)
+
+    return result == nil
+
+end
+
+function ESP:Create(player)
+
+    if self.Objects[player] then
+        return
+    end
+
+    local character = player.Character
+
+    if not character then
+        return
+    end
+
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "reaper_highlight"
+    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    highlight.FillTransparency = 0.5
+    highlight.OutlineTransparency = 0
+    highlight.Parent = game.CoreGui
+    highlight.Adornee = character
+
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "reaper_billboard"
+    billboard.Size = UDim2.new(0, 200, 0, 50)
+    billboard.AlwaysOnTop = true
+    billboard.StudsOffset = Vector3.new(0, 3, 0)
+    billboard.Parent = game.CoreGui
+    billboard.Adornee = character:FindFirstChild("Head")
+
+    local text = Instance.new("TextLabel")
+    text.BackgroundTransparency = 1
+    text.Size = UDim2.new(1,0,1,0)
+    text.Font = Enum.Font.Code
+    text.TextScaled = true
+    text.TextStrokeTransparency = 0
+    text.Parent = billboard
+
+    self.Objects[player] = {
+        Highlight = highlight,
+        Billboard = billboard,
+        Text = text
+    }
+
+    table.insert(getgenv().reaper_objects, highlight)
+    table.insert(getgenv().reaper_objects, billboard)
+
+end
+
+function ESP:Remove(player)
+
+    local objects = self.Objects[player]
+
+    if not objects then
+        return
+    end
+
+    for _, object in pairs(objects) do
+        object:Destroy()
+    end
+
+    self.Objects[player] = nil
+
+end
+
+function ESP:Hide()
+
+    for _, objects in pairs(self.Objects) do
+        objects.Highlight.Enabled = false
+        objects.Billboard.Enabled = false
+    end
+
+end
+
+function ESP:Update()
+
+    for _, player in pairs(Players:GetPlayers()) do
+
+        if player == LocalPlayer then
+            continue
+        end
+
+        local character = player.Character
+
+        if not character then
+            continue
+        end
+
+        local humanoid = character:FindFirstChild("Humanoid")
+        local root = character:FindFirstChild("HumanoidRootPart")
+
+        if not humanoid or not root then
+            continue
+        end
+
         if humanoid.Health <= 0 then
             continue
         end
