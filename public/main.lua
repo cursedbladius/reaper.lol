@@ -1,4 +1,89 @@
 local RunService = game:GetService("RunService")
+
+local library = loadstring(game:HttpGet(
+    "https://raw.githubusercontent.com/i77lhm/vaderpaste/refs/heads/main/library.lua"
+))()
+
+local flags = library.flags
+
+getgenv().reaper_connections = getgenv().reaper_connections or {}
+getgenv().reaper_objects = getgenv().reaper_objects or {}
+
+local window = library:window({
+    name = "reaper.lol",
+    size = UDim2.fromOffset(500, 650)
+})
+
+local visuals = window:tab({
+    name = "Visuals"
+})
+
+local settings = window:tab({
+    name = "Settings"
+})
+
+local elementsSection = visuals:section({
+    name = "Elements"
+})
+
+local optionsSection = visuals:section({
+    name = "Options"
+})
+
+local settingsSection = settings:section({
+    name = "Client"
+})
+
+local espToggle = elementsSection:toggle({
+    name = "ESP",
+    flag = "visuals_esp",
+    default = false
+})
+
+espToggle:colorpicker({
+    flag = "visuals_esp_color",
+    color = Color3.fromRGB(255, 0, 0)
+})
+
+local boxToggle = elementsSection:toggle({
+    name = "Boxes",
+    flag = "visuals_boxes",
+    default = true
+})
+
+boxToggle:colorpicker({
+    flag = "visuals_boxes_color",
+    color = Color3.fromRGB(255, 255, 255)
+})
+
+local namesToggle = elementsSection:toggle({
+    name = "Names",
+    flag = "visuals_names",
+    default = true
+})
+
+namesToggle:colorpicker({
+    flag = "visuals_names_color",
+    color = Color3.fromRGB(255, 255, 255)
+})
+
+local chamsToggle = elementsSection:toggle({
+    name = "Chams",
+    flag = "visuals_chams",
+    default = true
+})
+
+chamsToggle:colorpicker({
+    flag = "visuals_chams_color",
+    color = Color3.fromRGB(255, 0, 0)
+})
+
+elementsSection:dropdown({
+    name = "Cham Material",
+    flag = "visuals_chams_material",
+    items = {
+        "Plastic",
+        "ForceField",
         "Neon",
         "Glass",
         "SmoothPlastic"
