@@ -1,21 +1,4 @@
 local RunService = game:GetService("RunService")
-local chamsToggle = elementsSection:toggle({
-    name = "Chams",
-    flag = "visuals_chams",
-    default = true
-})
-
-chamsToggle:colorpicker({
-    flag = "visuals_chams_color",
-    color = Color3.fromRGB(255, 0, 0)
-})
-
-elementsSection:dropdown({
-    name = "Cham Material",
-    flag = "visuals_chams_material",
-    items = {
-        "Plastic",
-        "ForceField",
         "Neon",
         "Glass",
         "SmoothPlastic"
