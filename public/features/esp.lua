@@ -1,5 +1,4 @@
 local Players = game:GetService("Players")
-local Camera = workspace.CurrentCamera
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -16,29 +15,33 @@ function ESP:Create(player)
         return
     end
 
-    local box = Drawing.new("Square")
-    box.Visible = false
-    box.Filled = false
-    box.Thickness = 1
+    local character = player.Character
 
-    local name = Drawing.new("Text")
-    name.Visible = false
-    name.Center = true
-    name.Outline = true
-    name.Size = 13
+    if not character then
+        return
+    end
 
-    self.Objects[player] = {
-        Box = box,
-        Name = name
-    }
+    local highlight = Instance.new("Highlight")
+
+    highlight.FillColor = Color3.fromRGB(255,0,0)
+    highlight.OutlineColor = Color3.fromRGB(255,255,255)
+
+    highlight.FillTransparency = 0.5
+    highlight.OutlineTransparency = 0
+
+    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+
+    highlight.Adornee = character
+    highlight.Parent = game.CoreGui
+
+    self.Objects[player] = highlight
 
 end
 
 function ESP:Hide()
 
-    for _, drawings in pairs(self.Objects) do
-        drawings.Box.Visible = false
-        drawings.Name.Visible = false
+    for _, highlight in pairs(self.Objects) do
+        highlight.Enabled = false
     end
 
 end
@@ -57,56 +60,29 @@ function ESP:Update()
             continue
         end
 
-        local root = character:FindFirstChild("HumanoidRootPart")
-        local humanoid = character:FindFirstChild("Humanoid")
-
-        if not root or not humanoid then
-            continue
+        if not self.Objects[player] then
+            self:Create(player)
         end
 
-        if humanoid.Health <= 0 then
-            continue
+        local highlight = self.Objects[player]
+
+        if highlight then
+            highlight.Enabled = self.Flags.visuals_esp
         end
-
-        self:Create(player)
-
-        local drawings = self.Objects[player]
-
-        local position, visible = Camera:WorldToViewportPoint(root.Position)
-
-        if not visible then
-            drawings.Box.Visible = false
-            drawings.Name.Visible = false
-            continue
-        end
-
-        local width = 60
-        local height = 100
-
-        -- BOX
-        drawings.Box.Size = Vector2.new(width, height)
-
-        drawings.Box.Position = Vector2.new(
-            position.X - width / 2,
-            position.Y - height / 2
-        )
-
-        drawings.Box.Color = self.Flags.visuals_esp_color or Color3.fromRGB(255,0,0)
-        drawings.Box.Visible = self.Flags.visuals_boxes
-
-        -- NAME
-        drawings.Name.Text = player.Name
-
-        drawings.Name.Position = Vector2.new(
-            position.X,
-            position.Y - height / 2 - 15
-        )
-
-        drawings.Name.Color = Color3.fromRGB(255,255,255)
-        drawings.Name.Visible = self.Flags.visuals_names
 
     end
 
 end
+
+Players.PlayerRemoving:Connect(function(player)
+
+    local obj = ESP.Objects[player]
+
+    if obj then
+        obj:Destroy()
+        ESP.Objects[player] = nil
+    end
+
+end)
 
 return ESP
