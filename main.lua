@@ -278,6 +278,45 @@ local FlySection = MovementTab:Section({Name = "Fly", Side = 1})
 local JumpSection = MovementTab:Section({Name = "Jump", Side = 2})
 local SpeedSection = MovementTab:Section({Name = "Speed", Side = 2})
 
+local MiscSection = MovementTab:Section({Name = "Camera", Side = 2})
+
+local _thirdPersonEnabled = false
+local _thirdPersonConn = nil
+local _origMinZoom = nil
+local _origMaxZoom = nil
+
+MiscSection:Toggle({Name = "Force Third Person", Flag = "ForceThirdPerson", Default = false, Callback = function(Value)
+    _thirdPersonEnabled = Value
+    local player = game:GetService("Players").LocalPlayer
+    if Value then
+        _origMinZoom = player.CameraMinZoomDistance
+        _origMaxZoom = player.CameraMaxZoomDistance
+        player.CameraMinZoomDistance = 0.5
+        player.CameraMaxZoomDistance = 128
+        if not _thirdPersonConn then
+            _thirdPersonConn = game:GetService("RunService").RenderStepped:Connect(function()
+                pcall(function()
+                    if player.CameraMaxZoomDistance < 2 then
+                        player.CameraMaxZoomDistance = 128
+                    end
+                    if player.CameraMinZoomDistance > 10 then
+                        player.CameraMinZoomDistance = 0.5
+                    end
+                end)
+            end)
+        end
+    else
+        if _thirdPersonConn then
+            _thirdPersonConn:Disconnect()
+            _thirdPersonConn = nil
+        end
+        pcall(function()
+            if _origMinZoom then player.CameraMinZoomDistance = _origMinZoom end
+            if _origMaxZoom then player.CameraMaxZoomDistance = _origMaxZoom end
+        end)
+    end
+end})
+
 local OriginalUnload = Library.Unload
 Library.Unload = function(self)
     if ESP then
@@ -285,6 +324,15 @@ Library.Unload = function(self)
     end
     ToolModifier:Unload()
     ParticleAura:Unload()
+    if _thirdPersonConn then
+        _thirdPersonConn:Disconnect()
+        _thirdPersonConn = nil
+    end
+    pcall(function()
+        local player = game:GetService("Players").LocalPlayer
+        if _origMinZoom then player.CameraMinZoomDistance = _origMinZoom end
+        if _origMaxZoom then player.CameraMaxZoomDistance = _origMaxZoom end
+    end)
     OriginalUnload(self)
 end
 
