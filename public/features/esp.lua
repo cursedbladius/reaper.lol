@@ -85,22 +85,34 @@ local function CreateESPObject()
     -- Name text (centered above box, with outline for readability)
     obj.Name = NewText({Size = 13, Center = true, Outline = true, OutlineColor = Color3.new(0, 0, 0)})
 
+    -- Health bar (left side of box)
+    obj.HealthBarOutline = NewSquare({Thickness = 1, Color = Color3.new(0, 0, 0), Filled = true})
+    obj.HealthBarBackground = NewSquare({Thickness = 1, Color = Color3.new(0, 0, 0), Filled = true})
+    obj.HealthBar = NewSquare({Thickness = 1, Color = Color3.new(0, 1, 0), Filled = true})
+
+    -- Smoothed health value for animation
+    obj.SmoothedHealth = 1
+
     return obj
 end
 
 -- Destroy ESP drawings for a player
 local function DestroyESPObject(obj)
     if not obj then return end
-    for _, drawing in pairs(obj) do
-        pcall(function() drawing:Remove() end)
+    for key, drawing in pairs(obj) do
+        if typeof(drawing) ~= "number" then
+            pcall(function() drawing:Remove() end)
+        end
     end
 end
 
 -- Hide all drawings in an ESP object
 local function HideESPObject(obj)
     if not obj then return end
-    for _, drawing in pairs(obj) do
-        pcall(function() drawing.Visible = false end)
+    for key, drawing in pairs(obj) do
+        if typeof(drawing) ~= "number" then
+            pcall(function() drawing.Visible = false end)
+        end
     end
 end
 
@@ -302,6 +314,54 @@ local function UpdateESP()
         else
             obj.BoxOutline.Visible = false
             obj.Box.Visible = false
+        end
+
+        -- ═══════════════════════ HEALTH BAR ═══════════════════════
+        if ESP.Settings.HealthBar then
+            local healthFraction = math.clamp(humanoid.Health / humanoid.MaxHealth, 0, 1)
+
+            -- Smooth lerp toward actual health (0.1 = speed, lower = smoother)
+            obj.SmoothedHealth = obj.SmoothedHealth + (healthFraction - obj.SmoothedHealth) * 0.1
+            if math.abs(obj.SmoothedHealth - healthFraction) < 0.001 then
+                obj.SmoothedHealth = healthFraction
+            end
+            local smoothed = obj.SmoothedHealth
+
+            local barWidth = 2
+            local padding = 4
+            local barX = bounds.X - padding - barWidth
+            local barY = bounds.Y
+            local barHeight = bounds.Height
+            local fillHeight = math.floor(barHeight * smoothed)
+
+            -- Outline (1px black border around the full bar)
+            obj.HealthBarOutline.Position = Vector2.new(barX - 1, barY - 1)
+            obj.HealthBarOutline.Size = Vector2.new(barWidth + 2, barHeight + 2)
+            obj.HealthBarOutline.Color = Color3.new(0, 0, 0)
+            obj.HealthBarOutline.Transparency = 0.65
+            obj.HealthBarOutline.Visible = true
+
+            -- Dark background
+            obj.HealthBarBackground.Position = Vector2.new(barX, barY)
+            obj.HealthBarBackground.Size = Vector2.new(barWidth, barHeight)
+            obj.HealthBarBackground.Color = Color3.fromRGB(20, 20, 20)
+            obj.HealthBarBackground.Transparency = 1
+            obj.HealthBarBackground.Visible = true
+
+            -- Colored fill (grows from bottom)
+            obj.HealthBar.Position = Vector2.new(barX, barY + (barHeight - fillHeight))
+            obj.HealthBar.Size = Vector2.new(barWidth, fillHeight)
+            obj.HealthBar.Color = Color3.fromRGB(
+                math.floor(255 * (1 - smoothed)),
+                math.floor(255 * smoothed),
+                0
+            )
+            obj.HealthBar.Transparency = 1
+            obj.HealthBar.Visible = true
+        else
+            obj.HealthBarOutline.Visible = false
+            obj.HealthBarBackground.Visible = false
+            obj.HealthBar.Visible = false
         end
     end
 end
