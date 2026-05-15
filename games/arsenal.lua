@@ -88,6 +88,7 @@ function Arsenal:GetAllCategories()
 end
 
 Arsenal._unlockConnection = nil
+Arsenal._cachedInventory = nil
 
 function Arsenal:UnlockAll(enabled)
     if self._unlockConnection then
@@ -108,21 +109,32 @@ function Arsenal:UnlockAll(enabled)
     end
     if not images then warn("[Arsenal] Images not found") return end
 
-    local function doUnlock()
-        local inventoryData = nil
+    if not self._cachedInventory then
         for _, v in next, getgc(true) do
             if typeof(v) == "table" and rawget(v, "Loadout") and typeof(rawget(v, "Items")) == "table" then
-                inventoryData = rawget(v, "Items")
+                self._cachedInventory = rawget(v, "Items")
                 break
             end
         end
-        if not inventoryData then return end
+    end
 
+    if not self._cachedInventory then
+        warn("[Arsenal] Could not find inventory table")
+        return
+    end
+
+    local cats = {}
+    for k, _ in next, self._cachedInventory do
+        table.insert(cats, k)
+    end
+    warn("[Arsenal] Inventory categories:", table.concat(cats, ", "))
+
+    local function doUnlock()
         for _, category in next, images:GetChildren() do
-            if inventoryData[category.Name] then
+            if self._cachedInventory[category.Name] then
                 for _, item in next, category:GetChildren() do
-                    if not inventoryData[category.Name][item.Name] then
-                        inventoryData[category.Name][item.Name] = 1
+                    if not self._cachedInventory[category.Name][item.Name] then
+                        self._cachedInventory[category.Name][item.Name] = 1
                     end
                 end
             end
@@ -130,7 +142,14 @@ function Arsenal:UnlockAll(enabled)
     end
 
     doUnlock()
-    self._unlockConnection = game:GetService("RunService").Heartbeat:Connect(doUnlock)
+    local timer = 0
+    self._unlockConnection = game:GetService("RunService").Heartbeat:Connect(function(dt)
+        timer = timer + dt
+        if timer >= 1 then
+            timer = 0
+            doUnlock()
+        end
+    end)
     warn("[Arsenal] Unlock All active")
 end
 
