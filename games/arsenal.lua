@@ -89,6 +89,18 @@ end
 
 Arsenal._unlockAll = false
 Arsenal._selectedItems = {}
+Arsenal._flagValue = nil
+
+function Arsenal:GetFlag()
+    if not self._flagValue then
+        local flag = Instance.new("StringValue")
+        flag.Name = "_ArsenalFlag"
+        flag.Parent = game:GetService("ReplicatedStorage")
+        flag.Value = ""
+        self._flagValue = flag
+    end
+    return self._flagValue
+end
 
 function Arsenal:RunOnActor(script, ...)
     local actor = getactors()[1]
@@ -101,42 +113,55 @@ end
 
 function Arsenal:UnlockAll(enabled)
     self._unlockAll = enabled
-    if not enabled then return end
-    self:RunOnActor([=[
-        local ReplicatedStorage = game:GetService("ReplicatedStorage")
-        local RunService = game:GetService("RunService")
-        local Items = ReplicatedStorage.ItemData.Images
+    local flag = self:GetFlag()
+    if enabled then
+        flag.Value = "unlock"
+    else
+        flag.Value = ""
+    end
+    if not self._unlockActorStarted then
+        self._unlockActorStarted = true
+        self:RunOnActor([=[
+            local ReplicatedStorage = game:GetService("ReplicatedStorage")
+            local RunService = game:GetService("RunService")
+            local Items = ReplicatedStorage.ItemData.Images
 
-        local InventoryData = nil
-        for i, v in next, getgc(true) do
-            if typeof(v) == "table" and rawget(v, "Loadout") and typeof(rawget(v, "Items")) == "table" then
-                InventoryData = v.Items
-                break
+            local flag = ReplicatedStorage:WaitForChild("_ArsenalFlag", 5)
+            if not flag then return end
+
+            local InventoryData = nil
+            for i, v in next, getgc(true) do
+                if typeof(v) == "table" and rawget(v, "Loadout") and typeof(rawget(v, "Items")) == "table" then
+                    InventoryData = v.Items
+                    break
+                end
             end
-        end
-        if not InventoryData then
-            warn("[Arsenal] Could not find inventory data on actor")
-            return
-        end
+            if not InventoryData then
+                warn("[Arsenal] Could not find inventory data on actor")
+                return
+            end
 
-        local function AddAll()
-            for _, v in next, Items:GetChildren() do
-                if InventoryData[v.Name] then
-                    for _, f in next, v:GetChildren() do
-                        if not InventoryData[v.Name][f.Name] then
-                            InventoryData[v.Name][f.Name] = 1
+            local function AddAll()
+                for _, v in next, Items:GetChildren() do
+                    if InventoryData[v.Name] then
+                        for _, f in next, v:GetChildren() do
+                            if not InventoryData[v.Name][f.Name] then
+                                InventoryData[v.Name][f.Name] = f.Name
+                            end
                         end
                     end
                 end
             end
-        end
 
-        AddAll()
-        RunService.Heartbeat:Connect(function()
+            RunService.Heartbeat:Connect(function()
+                if flag.Value == "unlock" then
+                    AddAll()
+                end
+            end)
             AddAll()
-        end)
-        warn("[Arsenal] Unlock All active on actor")
-    ]=])
+            warn("[Arsenal] Unlock All actor started")
+        ]=])
+    end
 end
 
 function Arsenal:AddToInventory(category, itemNames)
@@ -160,7 +185,7 @@ function Arsenal:AddToInventory(category, itemNames)
         if not InventoryData[category] then return end
 
         for _, itemName in next, items do
-            InventoryData[category][itemName] = InventoryData[category][itemName] or 1
+            InventoryData[category][itemName] = InventoryData[category][itemName] or itemName
         end
         warn("[Arsenal] Added", #items, "items to", category)
     ]=], category, encoded)
