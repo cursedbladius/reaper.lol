@@ -125,63 +125,65 @@ function Arsenal:StartActor()
 
         local InventoryData = nil
         local Loadout = nil
+        local DataTable = nil
         local EquippedKillEffect = nil
+        local originalInventory = {}
+        local loadoutHooked = false
+        local effectHooked = false
 
-        for i, v in next, getgc(true) do
-            if typeof(v) == "table" and rawget(v, "Loadout") and typeof(rawget(v, "Items")) == "table" then
-                InventoryData = v.Items
-                Loadout = v.Loadout
-                break
+        local function FindTables()
+            for i, v in next, getgc(true) do
+                if typeof(v) == "table" and rawget(v, "Loadout") and typeof(rawget(v, "Items")) == "table" then
+                    if v.Items ~= InventoryData then
+                        InventoryData = v.Items
+                        Loadout = v.Loadout
+                        DataTable = v
+                        originalInventory = {}
+                        for catName, catData in next, InventoryData do
+                            if typeof(catData) == "table" then
+                                originalInventory[catName] = {}
+                                for itemName, itemVal in next, catData do
+                                    originalInventory[catName][itemName] = itemVal
+                                end
+                            end
+                        end
+                        return true
+                    end
+                    return false
+                end
             end
+            return false
         end
 
+        FindTables()
         if not InventoryData then
             warn("[Arsenal] Could not find inventory data")
             return
         end
 
         local function ChangeSkin(skinname)
-            if LocalPlayer:FindFirstChild("Data") and LocalPlayer.Data:FindFirstChild("Skin") then
-                LocalPlayer.Data.Skin.Value = skinname
-            end
+            pcall(function() LocalPlayer.Data.Skin.Value = skinname end)
         end
 
         local function ChangeGunSkin(name)
-            if LocalPlayer:FindFirstChild("Equipped") then
-                LocalPlayer.Equipped.Value = name
-            end
+            pcall(function() LocalPlayer.Equipped.Value = name end)
         end
 
         local function ChangeMelee(skinname)
-            if LocalPlayer:FindFirstChild("Data") and LocalPlayer.Data:FindFirstChild("Melee") then
-                LocalPlayer.Data.Melee.Value = skinname
-            end
+            pcall(function() LocalPlayer.Data.Melee.Value = skinname end)
         end
 
         local function ChangeKillEffect(skinname)
-            if LocalPlayer:FindFirstChild("Data") and LocalPlayer.Data:FindFirstChild("KillEffect") then
-                LocalPlayer.Data.KillEffect.Value = skinname
-            end
+            pcall(function() LocalPlayer.Data.KillEffect.Value = skinname end)
             EquippedKillEffect = skinname
         end
 
         local function ChangeAnnouncer(skinname)
-            if LocalPlayer:FindFirstChild("Data") and LocalPlayer.Data:FindFirstChild("Announcer") then
-                LocalPlayer.Data.Announcer.Value = skinname
-            end
-        end
-
-        local originalInventory = {}
-        for catName, catData in next, InventoryData do
-            if typeof(catData) == "table" then
-                originalInventory[catName] = {}
-                for itemName, itemVal in next, catData do
-                    originalInventory[catName][itemName] = itemVal
-                end
-            end
+            pcall(function() LocalPlayer.Data.Announcer.Value = skinname end)
         end
 
         local function AddEveryItem()
+            if not InventoryData then return end
             for _, v in next, Items:GetChildren() do
                 if InventoryData[v.Name] then
                     for _, f in next, v:GetChildren() do
@@ -207,19 +209,19 @@ function Arsenal:StartActor()
         end
 
         local function AddSelectedItems()
+            if not InventoryData then return end
             local selected = ParseSelected()
             for cat, items in next, selected do
                 if InventoryData[cat] then
                     for itemName, _ in next, items do
                         InventoryData[cat][itemName] = InventoryData[cat][itemName] or 1
                     end
-                else
-                    warn("[Arsenal] Category not found in inventory:", cat)
                 end
             end
         end
 
         local function RemoveUnlockedItems()
+            if not InventoryData then return end
             local selected = ParseSelected()
             for catName, catData in next, InventoryData do
                 if typeof(catData) == "table" then
@@ -234,9 +236,9 @@ function Arsenal:StartActor()
             end
         end
 
-        local wasUnlocked = false
-
-        if Loadout then
+        local function HookLoadout()
+            if not Loadout or loadoutHooked then return end
+            loadoutHooked = true
             local rl = table.clone(Loadout)
             setmetatable(Loadout, {
                 __index = rl,
@@ -259,32 +261,56 @@ function Arsenal:StartActor()
             table.clear(Loadout)
         end
 
-        local effectFunc = nil
-        for _, v in next, getgc() do
-            if typeof(v) == "function" and islclosure(v) then
-                if debug.info(v, "l") == 54994 then
-                    effectFunc = v
-                    break
+        local function HookKillEffect()
+            if effectHooked then return end
+            for _, v in next, getgc() do
+                if typeof(v) == "function" and islclosure(v) then
+                    if debug.info(v, "l") == 54994 then
+                        effectHooked = true
+                        local PlayerName = LocalPlayer.Name
+                        local KillEffect
+                        KillEffect = hookfunction(v, newcclosure(function(...)
+                            local args = {...}
+                            if args[11] and tostring(args[11]):find(PlayerName) then
+                                if not EquippedKillEffect then return end
+                                args[12] = EquippedKillEffect
+                            end
+                            return KillEffect(unpack(args))
+                        end))
+                        warn("[Arsenal] Kill effect hook active")
+                        break
+                    end
                 end
             end
         end
 
-        if effectFunc then
-            local PlayerName = LocalPlayer.Name
-            local KillEffect
-            KillEffect = hookfunction(effectFunc, newcclosure(function(...)
-                local args = {...}
-                if args[11] and tostring(args[11]):find(PlayerName) then
-                    if not EquippedKillEffect then return end
-                    args[12] = EquippedKillEffect
-                end
-                return KillEffect(unpack(args))
-            end))
-            warn("[Arsenal] Kill effect hook active")
-        end
+        HookLoadout()
+        HookKillEffect()
+
+        local wasUnlocked = false
+        local refreshTimer = 0
 
         RunService.Heartbeat:Connect(function()
-            if not InventoryData then return end
+            refreshTimer = refreshTimer + 1
+            if refreshTimer >= 300 then
+                refreshTimer = 0
+                local changed = FindTables()
+                if changed then
+                    loadoutHooked = false
+                    HookLoadout()
+                    warn("[Arsenal] Tables refreshed")
+                end
+            end
+
+            if not InventoryData then
+                FindTables()
+                if InventoryData then
+                    loadoutHooked = false
+                    HookLoadout()
+                end
+                return
+            end
+
             local isUnlocked = unlockFlag and unlockFlag.Value == "1"
             if isUnlocked then
                 AddEveryItem()
@@ -337,7 +363,6 @@ function Arsenal:_updateSelectedFlag()
         end
     end
     local encoded = table.concat(parts, ";")
-    warn("[Arsenal] Selected flag:", encoded, "| Flag exists:", self._selectedFlag ~= nil)
     if self._selectedFlag then
         self._selectedFlag.Value = encoded
     end
