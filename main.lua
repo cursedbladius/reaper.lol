@@ -5,8 +5,6 @@ local ESP = loadstring(game:HttpGet("https://reaper-lol.pages.dev/features/visua
 ESP:Initialize()
 
 local ToolModifier = loadstring(game:HttpGet("https://reaper-lol.pages.dev/features/visuals/tool_modifier.lua"))()
-local BulletTracers = loadstring(game:HttpGet("https://reaper-lol.pages.dev/features/visuals/bullet_tracers.lua"))()
-local CustomChams = loadstring(game:HttpGet("https://reaper-lol.pages.dev/features/visuals/custom_chams.lua"))()
 
 local GameRegistry = loadstring(game:HttpGet("https://reaper-lol.pages.dev/games/registry.lua"))()
 local DaHoodAdapter = loadstring(game:HttpGet("https://reaper-lol.pages.dev/games/da_hood.lua"))()
@@ -140,36 +138,6 @@ OptionsSection:Toggle({Name = "Team Check", Flag = "Team Check", Default = true,
     ESP:SetSetting("TeamCheck", Value)
 end})
 
-local ChamsSection = VisualsTab:Section({Name = "Custom Chams", Side = 1})
-ChamsSection:Toggle({Name = "Custom Chams", Flag = "CustomChams", Default = false, Callback = function(Value)
-    CustomChams.Enabled = Value
-    if Value then
-        CustomChams:Start()
-    else
-        CustomChams:Stop()
-    end
-end}):Colorpicker({Name = "", Flag = "ChamsColor", Default = Color3.fromRGB(255, 0, 255), Callback = function(Value)
-    CustomChams.Color = Value
-end})
-ChamsSection:Slider({Name = "Transparency", Flag = "ChamsTransparency", Default = 0.3, Min = 0, Max = 1, Decimals = 0.05, Callback = function(Value)
-    CustomChams.Transparency = Value
-end})
-ChamsSection:Toggle({Name = "Always On Top", Flag = "ChamsAlwaysOnTop", Default = true, Callback = function(Value)
-    CustomChams.AlwaysOnTop = Value
-end})
-ChamsSection:Textbox({Name = "Image ID", Flag = "ChamsImageId", Default = "", Callback = function(Value)
-    CustomChams.ImageId = Value
-end})
-ChamsSection:Slider({Name = "Spritesheet Cols", Flag = "ChamsCols", Default = 1, Min = 1, Max = 16, Decimals = 1, Callback = function(Value)
-    CustomChams.SpritesheetCols = Value
-end})
-ChamsSection:Slider({Name = "Spritesheet Rows", Flag = "ChamsRows", Default = 1, Min = 1, Max = 16, Decimals = 1, Callback = function(Value)
-    CustomChams.SpritesheetRows = Value
-end})
-ChamsSection:Slider({Name = "Animation FPS", Flag = "ChamsFPS", Default = 10, Min = 1, Max = 60, Decimals = 1, Callback = function(Value)
-    CustomChams.SpritesheetFPS = Value
-end})
-
 local ExtrasSection = VisualsTab:Section({Name = "Weapon Modifier", Side = 2})
 
 ExtrasSection:Toggle({Name = "Tool Modifier", Flag = "ToolModifier", Default = false, Callback = function(Value)
@@ -210,7 +178,8 @@ ToolMaterialDropdown = ExtrasSection:Dropdown({
 local _toolModFrame = 0
 game:GetService("RunService").RenderStepped:Connect(function()
     _toolModFrame = _toolModFrame + 1
-    if _toolModFrame % 5 == 0 then
+    local hasEffect = ToolModifier.Effect ~= "None" or ToolModifier.ArmEffect ~= "None"
+    if hasEffect or _toolModFrame % 3 == 0 then
         ToolModifier:Apply()
     end
 end)
@@ -269,25 +238,6 @@ if game.GameId == 111958650 or game.PlaceId == 286090429 then
             end)
         end
     })
-
-    local TracerSection = VisualsTab:Section({Name = "Bullet Tracers", Side = 2})
-    TracerSection:Toggle({Name = "Bullet Tracers", Flag = "BulletTracers", Default = false, Callback = function(Value)
-        BulletTracers.Enabled = Value
-        if Value then
-            BulletTracers:StartHook()
-        end
-    end}):Colorpicker({Name = "", Flag = "TracerColor", Default = Color3.fromRGB(255, 0, 0), Callback = function(Value)
-        BulletTracers.Color = Value
-    end})
-    TracerSection:Slider({Name = "Width", Flag = "TracerWidth", Default = 0.15, Min = 0.01, Max = 1, Decimals = 0.01, Callback = function(Value)
-        BulletTracers.Width = Value
-    end})
-    TracerSection:Slider({Name = "Lifetime", Flag = "TracerLifetime", Default = 0.5, Min = 0.1, Max = 3, Decimals = 0.1, Callback = function(Value)
-        BulletTracers.Lifetime = Value
-    end})
-    TracerSection:Textbox({Name = "Texture ID", Flag = "TracerTexture", Default = "", Callback = function(Value)
-        BulletTracers.TextureId = Value
-    end})
 
     local SkinSection = VisualsTab:Section({Name = "Skin-Changer", Side = 1})
     SkinSection:Toggle({Name = "Unlock All Items", Flag = "ArsenalUnlockAll", Default = false, Callback = function(Value)
@@ -351,8 +301,6 @@ Library.Unload = function(self)
         ESP:Unload()
     end
     ToolModifier:Unload()
-    BulletTracers:Unload()
-    CustomChams:Unload()
     OriginalUnload(self)
 end
 

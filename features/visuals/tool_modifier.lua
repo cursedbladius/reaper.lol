@@ -6,6 +6,8 @@ ToolModifier.Alpha = 0.4
 ToolModifier.Material = "Highlight"
 ToolModifier.OutlineColor = Color3.fromRGB(255, 255, 255)
 ToolModifier.OutlineEnabled = true
+ToolModifier.Effect = "None"
+ToolModifier.EffectSpeed = 1
 
 ToolModifier.ArmEnabled = false
 ToolModifier.ArmColor = Color3.fromRGB(0, 255, 0)
@@ -13,10 +15,46 @@ ToolModifier.ArmAlpha = 0.4
 ToolModifier.ArmMaterial = "Highlight"
 ToolModifier.ArmOutlineColor = Color3.fromRGB(255, 255, 255)
 ToolModifier.ArmOutlineEnabled = true
+ToolModifier.ArmEffect = "None"
+ToolModifier.ArmEffectSpeed = 1
 
 local CurrentTool = nil
 local ToolHighlight = nil
 local ToolPartData = {}
+
+local function LerpColor(c1, c2, t)
+    return Color3.new(
+        c1.R + (c2.R - c1.R) * t,
+        c1.G + (c2.G - c1.G) * t,
+        c1.B + (c2.B - c1.B) * t
+    )
+end
+
+local function GetEffectColors(effect, speed, baseColor, outlineColor, alpha)
+    local t = tick() * (speed or 1)
+    if effect == "Rainbow" then
+        local hue = (t * 0.15) % 1
+        local rainbow = Color3.fromHSV(hue, 1, 1)
+        return rainbow, rainbow, alpha
+    elseif effect == "Gradient" then
+        local lerp = (math.sin(t * 2) + 1) / 2
+        local fill = LerpColor(baseColor, outlineColor, lerp)
+        local outline = LerpColor(outlineColor, baseColor, lerp)
+        return fill, outline, alpha
+    elseif effect == "Breathing" then
+        local pulse = (math.sin(t * 2) + 1) / 2
+        local a = alpha + (1 - alpha) * pulse * 0.6
+        return baseColor, outlineColor, a
+    elseif effect == "Rainbow Gradient" then
+        local hue1 = (t * 0.15) % 1
+        local hue2 = (hue1 + 0.5) % 1
+        local lerp = (math.sin(t * 2) + 1) / 2
+        local c1 = Color3.fromHSV(hue1, 1, 1)
+        local c2 = Color3.fromHSV(hue2, 1, 1)
+        return LerpColor(c1, c2, lerp), LerpColor(c2, c1, lerp), alpha
+    end
+    return baseColor, outlineColor, alpha
+end
 
 local GameAdapter = nil
 local GameHighlights = {}
@@ -101,9 +139,10 @@ local function ApplyToEquippedTool(self)
             ToolHighlight.Parent = tool
         end
         ToolHighlight.Adornee = tool
-        ToolHighlight.FillColor = self.Color
-        ToolHighlight.FillTransparency = self.Alpha
-        ToolHighlight.OutlineColor = self.OutlineColor
+        local fc, oc, fa = GetEffectColors(self.Effect, self.EffectSpeed, self.Color, self.OutlineColor, self.Alpha)
+        ToolHighlight.FillColor = fc
+        ToolHighlight.FillTransparency = fa
+        ToolHighlight.OutlineColor = oc
         ToolHighlight.OutlineTransparency = self.OutlineEnabled and 0 or 1
         ToolHighlight.Enabled = true
     else
@@ -238,20 +277,21 @@ local function ApplyToGameTargets(self)
                 for _, c in pairs(p:GetChildren()) do
                     if c.Name == "_ToolModHighlight" then existing = c break end
                 end
+                local fc, oc, fa = GetEffectColors(self.Effect, self.EffectSpeed, self.Color, self.OutlineColor, self.Alpha)
                 if not existing then
                     local hl = Instance.new("Highlight")
                     hl.Name = "_ToolModHighlight"
                     hl.Adornee = p
-                    hl.FillColor = self.Color
-                    hl.FillTransparency = self.Alpha
-                    hl.OutlineColor = self.OutlineColor
+                    hl.FillColor = fc
+                    hl.FillTransparency = fa
+                    hl.OutlineColor = oc
                     hl.OutlineTransparency = self.OutlineEnabled and 0 or 1
                     hl.Parent = p
                     table.insert(GameHighlights, hl)
                 else
-                    existing.FillColor = self.Color
-                    existing.FillTransparency = self.Alpha
-                    existing.OutlineColor = self.OutlineColor
+                    existing.FillColor = fc
+                    existing.FillTransparency = fa
+                    existing.OutlineColor = oc
                     existing.OutlineTransparency = self.OutlineEnabled and 0 or 1
                 end
             end)
@@ -263,13 +303,14 @@ local function ApplyToGameTargets(self)
         GameHighlights = {}
 
         local mat = self.Material == "ForceField" and Enum.Material.ForceField or Enum.Material.Neon
+        local fc, _, _ = GetEffectColors(self.Effect, self.EffectSpeed, self.Color, self.OutlineColor, self.Alpha)
         for _, p in pairs(allParts) do
             pcall(function()
                 p.Material = mat
                 if self.Material == "ForceField" then
-                    p.BrickColor = BrickColor.new(self.Color)
+                    p.BrickColor = BrickColor.new(fc)
                 else
-                    p.Color = self.Color
+                    p.Color = fc
                 end
                 pcall(function() p.TextureID = "" end)
             end)
@@ -345,14 +386,15 @@ local function ApplyToArmTargets(self)
         mat = Enum.Material.Neon
     end
 
+    local fc, _, _ = GetEffectColors(self.ArmEffect, self.ArmEffectSpeed, self.ArmColor, self.ArmOutlineColor, self.ArmAlpha)
     for _, p in pairs(allParts) do
         pcall(function()
             if p.Transparency < 1 then
                 p.Material = mat
                 if self.ArmMaterial == "ForceField" then
-                    p.BrickColor = BrickColor.new(self.ArmColor)
+                    p.BrickColor = BrickColor.new(fc)
                 else
-                    p.Color = self.ArmColor
+                    p.Color = fc
                 end
                 pcall(function() p.TextureID = "" end)
             end
