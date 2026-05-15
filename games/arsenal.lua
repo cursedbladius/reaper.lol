@@ -194,6 +194,19 @@ end
 function Arsenal:SetSelectedItems(category, items)
     self._selectedItems[category] = items
     self:AddToInventory(category, items)
+    if items[1] then
+        if category == "Melees" then
+            self:SetMeleeSkin(items[1])
+        elseif category == "WeaponSkins" then
+            self:SetGunSkin(items[1])
+        elseif category == "KillEffects" then
+            self:SetKillEffect(items[1])
+        elseif category == "Announcers" then
+            self:SetAnnouncer(items[1])
+        elseif category == "Skins" then
+            self:SetCharacterSkin(items[1])
+        end
+    end
 end
 
 function Arsenal:SetMeleeSkin(skinName)

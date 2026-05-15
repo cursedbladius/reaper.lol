@@ -212,7 +212,6 @@ if game.GameId == 111958650 or game.PlaceId == 286090429 then
                 if state then table.insert(selected, name) end
             end
             ArsenalAdapter:SetSelectedItems("Melees", selected)
-            if selected[1] then ArsenalAdapter:SetMeleeSkin(selected[1]) end
         end
     })
     SkinSection:Dropdown({
@@ -226,7 +225,6 @@ if game.GameId == 111958650 or game.PlaceId == 286090429 then
                 if state then table.insert(selected, name) end
             end
             ArsenalAdapter:SetSelectedItems("WeaponSkins", selected)
-            if selected[1] then ArsenalAdapter:SetGunSkin(selected[1]) end
         end
     })
     SkinSection:Dropdown({
@@ -240,7 +238,6 @@ if game.GameId == 111958650 or game.PlaceId == 286090429 then
                 if state then table.insert(selected, name) end
             end
             ArsenalAdapter:SetSelectedItems("KillEffects", selected)
-            if selected[1] then ArsenalAdapter:SetKillEffect(selected[1]) end
         end
     })
     SkinSection:Dropdown({
@@ -254,7 +251,6 @@ if game.GameId == 111958650 or game.PlaceId == 286090429 then
                 if state then table.insert(selected, name) end
             end
             ArsenalAdapter:SetSelectedItems("Announcers", selected)
-            if selected[1] then ArsenalAdapter:SetAnnouncer(selected[1]) end
         end
     })
     SkinSection:Dropdown({
@@ -268,7 +264,6 @@ if game.GameId == 111958650 or game.PlaceId == 286090429 then
                 if state then table.insert(selected, name) end
             end
             ArsenalAdapter:SetSelectedItems("Skins", selected)
-            if selected[1] then ArsenalAdapter:SetCharacterSkin(selected[1]) end
         end
     })
 end
