@@ -138,7 +138,7 @@ OptionsSection:Toggle({Name = "Team Check", Flag = "Team Check", Default = true,
     ESP:SetSetting("TeamCheck", Value)
 end})
 
-local ExtrasSection = VisualsTab:Section({Name = "Extras", Side = 2})
+local ExtrasSection = VisualsTab:Section({Name = "Weapon Modifier", Side = 2})
 
 ExtrasSection:Toggle({Name = "Tool Modifier", Flag = "ToolModifier", Default = false, Callback = function(Value)
     ToolModifier.Enabled = Value
@@ -175,8 +175,12 @@ ToolMaterialDropdown = ExtrasSection:Dropdown({
     end
 })
 
+local _toolModFrame = 0
 game:GetService("RunService").RenderStepped:Connect(function()
-    ToolModifier:Apply()
+    _toolModFrame = _toolModFrame + 1
+    if _toolModFrame % 5 == 0 then
+        ToolModifier:Apply()
+    end
 end)
 
 if game.GameId == 111958650 or game.PlaceId == 286090429 then

@@ -294,7 +294,11 @@ local function ApplyToArmTargets(self)
 
     local allParts = {}
     for _, target in pairs(targets) do
+        local parts = {target}
         for _, p in pairs(target:GetDescendants()) do
+            table.insert(parts, p)
+        end
+        for _, p in pairs(parts) do
             if p:IsA("BasePart") and not ArmOriginals[p] then
                 local removables = {}
                 local specialMesh = nil
