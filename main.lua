@@ -285,17 +285,23 @@ local _thirdPersonConn = nil
 local _origMinZoom = nil
 local _origMaxZoom = nil
 
+local _origCameraMode = nil
 MiscSection:Toggle({Name = "Force Third Person", Flag = "ForceThirdPerson", Default = false, Callback = function(Value)
     _thirdPersonEnabled = Value
     local player = game:GetService("Players").LocalPlayer
     if Value then
         _origMinZoom = player.CameraMinZoomDistance
         _origMaxZoom = player.CameraMaxZoomDistance
+        _origCameraMode = player.CameraMode
+        player.CameraMode = Enum.CameraMode.Classic
         player.CameraMinZoomDistance = 0.5
         player.CameraMaxZoomDistance = 128
         if not _thirdPersonConn then
-            _thirdPersonConn = game:GetService("RunService").RenderStepped:Connect(function()
+            _thirdPersonConn = game:GetService("RunService").Heartbeat:Connect(function()
                 pcall(function()
+                    if player.CameraMode ~= Enum.CameraMode.Classic then
+                        player.CameraMode = Enum.CameraMode.Classic
+                    end
                     if player.CameraMaxZoomDistance < 2 then
                         player.CameraMaxZoomDistance = 128
                     end
@@ -311,6 +317,7 @@ MiscSection:Toggle({Name = "Force Third Person", Flag = "ForceThirdPerson", Defa
             _thirdPersonConn = nil
         end
         pcall(function()
+            if _origCameraMode then player.CameraMode = _origCameraMode end
             if _origMinZoom then player.CameraMinZoomDistance = _origMinZoom end
             if _origMaxZoom then player.CameraMaxZoomDistance = _origMaxZoom end
         end)
@@ -330,6 +337,7 @@ Library.Unload = function(self)
     end
     pcall(function()
         local player = game:GetService("Players").LocalPlayer
+        if _origCameraMode then player.CameraMode = _origCameraMode end
         if _origMinZoom then player.CameraMinZoomDistance = _origMinZoom end
         if _origMaxZoom then player.CameraMaxZoomDistance = _origMaxZoom end
     end)
