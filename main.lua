@@ -181,7 +181,7 @@ game:GetService("RunService").RenderStepped:Connect(function()
 end)
 
 if game.GameId == 111958650 or game.PlaceId == 286090429 then
-    local SkinSection = VisualsTab:Section({Name = "Skin-Changer", Side = 2})
+    local SkinSection = VisualsTab:ScrollableSection({Name = "Skin-Changer", Side = 2, Size = 200})
     SkinSection:Dropdown({
         Name = "Melee Skin",
         Flag = "ArsenalMeleeSkin",
