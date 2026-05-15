@@ -108,6 +108,9 @@ local function CreateESPObject()
     -- Distance text (centered below box)
     obj.Distance = NewText({Size = 13, Center = true, Outline = true, OutlineColor = Color3.new(0, 0, 0)})
 
+    -- Tool text (centered below box, under distance)
+    obj.Tool = NewText({Size = 13, Center = true, Outline = true, OutlineColor = Color3.new(0, 0, 0)})
+
     -- Skeleton lines (outline + colored for each bone)
     local MAX_BONES = 14
     obj.SkeletonOutlines = {}
@@ -256,7 +259,7 @@ local function GetBoundingBox(character)
 end
 
 -- Team check
-local function IsEnemy(player)
+local function IsTeam(player)
     if not ESP.Settings.TeamCheck then return true end
     if player.Team == nil or LocalPlayer.Team == nil then return true end
     return player.Team ~= LocalPlayer.Team
@@ -315,7 +318,7 @@ local function UpdateESP()
         end
 
         -- Team check
-        if not IsEnemy(player) then
+        if not IsTeam(player) then
             HideESPObject(obj)
             continue
         end
@@ -592,15 +595,30 @@ local function UpdateESP()
         end
 
         -- ═══════════════════════ DISTANCE ESP ═══════════════════════
+        local bottomOffset = bounds.Y + bounds.Height + 2
         if ESP.Settings.Distance then
             local meters = math.floor(distance / 3.5714 + 0.5)
             obj.Distance.Text = "[" .. meters .. "m]"
-            obj.Distance.Position = Vector2.new(bounds.X + bounds.Width / 2, bounds.Y + bounds.Height + 2)
+            obj.Distance.Position = Vector2.new(bounds.X + bounds.Width / 2, bottomOffset)
             obj.Distance.Color = ESP.Settings.DistanceColor
             obj.Distance.Font = GetFont(ESP.Settings.Font)
             obj.Distance.Visible = true
+            bottomOffset = bottomOffset + 14
         else
             obj.Distance.Visible = false
+        end
+
+        -- ═══════════════════════ TOOL ESP ═══════════════════════
+        if ESP.Settings.Tool then
+            local tool = character:FindFirstChildOfClass("Tool")
+            local toolName = tool and tool.Name or "None"
+            obj.Tool.Text = "[" .. toolName .. "]"
+            obj.Tool.Position = Vector2.new(bounds.X + bounds.Width / 2, bottomOffset)
+            obj.Tool.Color = ESP.Settings.ToolColor
+            obj.Tool.Font = GetFont(ESP.Settings.Font)
+            obj.Tool.Visible = true
+        else
+            obj.Tool.Visible = false
         end
     end
 end
