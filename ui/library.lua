@@ -202,7 +202,7 @@ local Library do
             ["Page Background"] = FromHex("#28201e"),
             ["Border"] = FromHex("#120f0e"),
             ["Outline"] = FromHex("#211c1b"),
-            ["Accent"] = FromHex("#ffb29d"),
+            ["Accent"] = FromHex("#ff5959"),
             ["Element"] = FromHex("#242221"),
             ["Hovered Element"] = FromHex("#322f2f"),
             ["Text"] = FromHex("#979797"),
