@@ -1667,7 +1667,7 @@ local Library do
                 AutoButtonColor = false,
                 AnchorPoint = Vector2New(0, 1),
                 Name = "\0",
-                Position = UDim2New(0, 0, 1, 0),
+                Position = UDim2New(0, 0, 1, -22),
                 Size = UDim2New(1, -26, 0, 18),
                 BorderSizePixel = 0,
                 TextSize = 14,
@@ -1720,6 +1720,92 @@ local Library do
                 Name = "\0",
                 Color = FromRGB(27, 27, 32)
             }):AddToTheme({Color = "Outline"})
+            
+            -- Hex input section
+            Items["HexFrame"] = Instances:Create("Frame", {
+                Parent = Items["ColorpickerWindow"].Instance,
+                Name = "\0",
+                BorderColor3 = FromRGB(10, 10, 10),
+                Position = UDim2New(0, 0, 1, -20),
+                Size = UDim2New(1, 0, 0, 18),
+                BorderSizePixel = 2,
+                BackgroundColor3 = FromRGB(20, 20, 25)
+            })  Items["HexFrame"]:AddToTheme({BackgroundColor3 = "Element", BorderColor3 = "Border"})
+            
+            Instances:Create("UIStroke", {
+                Parent = Items["HexFrame"].Instance,
+                ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+                LineJoinMode = Enum.LineJoinMode.Miter,
+                Name = "\0",
+                Color = FromRGB(27, 27, 32)
+            }):AddToTheme({Color = "Outline"})
+            
+            Items["HexLabel"] = Instances:Create("TextLabel", {
+                Parent = Items["HexFrame"].Instance,
+                FontFace = Library.Font,
+                TextColor3 = FromRGB(150, 150, 150),
+                BorderColor3 = FromRGB(0, 0, 0),
+                Text = "HEX",
+                Name = "\0",
+                Size = UDim2New(0, 30, 1, 0),
+                BackgroundTransparency = 1,
+                TextSize = 10,
+                BorderSizePixel = 0,
+                BackgroundColor3 = FromRGB(255, 255, 255)
+            })
+            
+            Items["HexInput"] = Instances:Create("TextBox", {
+                Parent = Items["HexFrame"].Instance,
+                FontFace = Library.Font,
+                TextColor3 = FromRGB(215, 215, 215),
+                BorderColor3 = FromRGB(0, 0, 0),
+                Text = "",
+                PlaceholderText = "FF0000",
+                Name = "\0",
+                Position = UDim2New(0, 32, 0, 0),
+                Size = UDim2New(1, -65, 1, 0),
+                BackgroundTransparency = 1,
+                TextSize = 11,
+                BorderSizePixel = 0,
+                ClearTextOnFocus = false,
+                BackgroundColor3 = FromRGB(255, 255, 255)
+            })  Items["HexInput"]:AddToTheme({TextColor3 = "Text"})
+            
+            Items["CopyHexButton"] = Instances:Create("TextButton", {
+                Parent = Items["HexFrame"].Instance,
+                FontFace = Library.Font,
+                TextColor3 = FromRGB(200, 200, 200),
+                BorderColor3 = FromRGB(0, 0, 0),
+                Text = "Copy",
+                AutoButtonColor = false,
+                Name = "\0",
+                Position = UDim2New(1, -32, 0, 1),
+                Size = UDim2New(0, 30, 1, -2),
+                TextSize = 10,
+                BorderSizePixel = 0,
+                BackgroundColor3 = FromRGB(40, 40, 45)
+            })
+            
+            Items["CopyHexButton"]:Connect("MouseButton1Down", function()
+                if setclipboard then
+                    setclipboard("#" .. Colorpicker.HexValue)
+                end
+            end)
+            
+            -- Handle hex input
+            Items["HexInput"].Instance.FocusLost:Connect(function()
+                local text = Items["HexInput"].Instance.Text
+                if text and #text > 0 then
+                    -- Remove # if present
+                    text = text:gsub("^#", "")
+                    -- Validate hex
+                    if text:match("^[0-9A-Fa-f]{6}$") then
+                        pcall(function()
+                            Colorpicker:Set(FromHex(text))
+                        end)
+                    end
+                end
+            end)
         end
 
         local SlidingPalette = false
@@ -1843,6 +1929,11 @@ local Library do
             if not IsFromAlpha then 
                 Items["Alpha"]:Tween(TweenInfo.new(0.17, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {BackgroundColor3 = self.Color})
             end
+            
+            -- Update hex input (if not currently focused)
+            if Items["HexInput"] and Items["HexInput"].Instance and not Items["HexInput"].Instance:IsFocused() then
+                Items["HexInput"].Instance.Text = self.HexValue
+            end
 
             if Data.Callback then 
                 Library:SafeCall(Data.Callback, self.Color, self.Alpha)
@@ -1897,196 +1988,9 @@ local Library do
             self:Update(true)
         end
 
-        -- Right-click context menu (uses global tracking)
+        -- Simple click handler (no context menu)
         Items["ColorpickerButton"]:Connect("MouseButton1Down", function()
-            -- Close any open colorpicker context menu
-            if Library.CurrentColorpickerMenu and Library.CurrentColorpickerMenu.Instance then
-                Library.CurrentColorpickerMenu:Clean()
-                Library.CurrentColorpickerMenu = nil
-            end
             Colorpicker:SetOpen(not Colorpicker.IsOpen)
-        end)
-        
-        Items["ColorpickerButton"]:Connect("MouseButton2Down", function()
-            -- Close existing menu if clicking same or different colorpicker
-            if Library.CurrentColorpickerMenu and Library.CurrentColorpickerMenu.Instance then
-                Library.CurrentColorpickerMenu:Clean()
-                if Library.CurrentColorpickerMenu == ContextMenu then
-                    Library.CurrentColorpickerMenu = nil
-                    ContextMenu = nil
-                    return
-                end
-            end
-            
-            ContextMenu = Instances:Create("Frame", {
-                Parent = Data.Parent.Instance,
-                BorderColor3 = FromRGB(10, 10, 10),
-                AnchorPoint = Vector2New(1, 0),
-                Name = "\0",
-                Position = UDim2New(1, 0, 1, 5),
-                Size = UDim2New(0, 75, 0, 45),
-                BorderSizePixel = 2,
-                ZIndex = 10002,
-                BackgroundColor3 = FromRGB(15, 15, 20)
-            })  ContextMenu:AddToTheme({BackgroundColor3 = "Background", BorderColor3 = "Border"})
-            
-            Library.CurrentColorpickerMenu = ContextMenu
-            
-            Instances:Create("UIStroke", {
-                Parent = ContextMenu.Instance,
-                ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-                LineJoinMode = Enum.LineJoinMode.Miter,
-                Name = "\0",
-                Color = FromRGB(27, 27, 32),
-                ZIndex = 10002
-            }):AddToTheme({Color = "Outline"})
-            
-            local MenuOptions = {
-                {Name = "Copy", Callback = function()
-                    Library.CurrentColorpickerMenu = nil
-                    if ContextMenu then
-                        ContextMenu:Clean()
-                    end
-                    
-                    if not setclipboard then
-                        warn("setclipboard not available")
-                        return
-                    end
-                    
-                    local hexValue = "#" .. Colorpicker.HexValue
-                    local success, err = pcall(function()
-                        setclipboard(hexValue)
-                    end)
-                    
-                    if success then
-                        print("Copied color:", hexValue)
-                    else
-                        warn("Failed to copy:", err)
-                    end
-                end},
-                {Name = "Paste", Callback = function()
-                    Library.CurrentColorpickerMenu = nil
-                    if ContextMenu then
-                        ContextMenu:Clean()
-                    end
-                    
-                    if not getclipboard then
-                        warn("getclipboard not available")
-                        return
-                    end
-                    
-                    local clipboard = getclipboard()
-                    if not clipboard or #clipboard == 0 then
-                        warn("Clipboard is empty")
-                        return
-                    end
-                    
-                    -- Trim whitespace
-                    clipboard = clipboard:gsub("^%s*(.-)%s*$", "%1")
-                    
-                    -- Try hex format first (with or without #)
-                    local hex = clipboard:match("^#?([0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f])$")
-                    if hex then
-                        local success, err = pcall(function()
-                            Colorpicker:Set(FromHex(hex))
-                        end)
-                        if success then
-                            print("Pasted color:", hex)
-                        else
-                            warn("Failed to set hex color:", err)
-                        end
-                        return
-                    end
-                    
-                    -- Try Color3 format: "255, 0, 0" or "255 0 0"
-                    local r, g, b = clipboard:match("^(%d+)%D+(%d+)%D+(%d+)$")
-                    if r and g and b then
-                        local success, err = pcall(function()
-                            Colorpicker:Set(FromRGB(tonumber(r), tonumber(g), tonumber(b)))
-                        end)
-                        if success then
-                            print("Pasted RGB:", r, g, b)
-                        else
-                            warn("Failed to set RGB color:", err)
-                        end
-                        return
-                    end
-                    
-                    warn("Clipboard format not recognized:", clipboard)
-                end},
-                {Name = "Copy HEX", Callback = function()
-                    Library.CurrentColorpickerMenu = nil
-                    if ContextMenu then
-                        ContextMenu:Clean()
-                    end
-                    
-                    if setclipboard then
-                        local hexValue = "#" .. Colorpicker.HexValue
-                        pcall(function()
-                            setclipboard(hexValue)
-                        end)
-                    end
-                end}
-            }
-            
-            for i, Option in ipairs(MenuOptions) do
-                local MenuButton = Instances:Create("TextButton", {
-                    Parent = ContextMenu.Instance,
-                    FontFace = Library.Font,
-                    TextColor3 = FromRGB(215, 215, 215),
-                    BorderColor3 = FromRGB(0, 0, 0),
-                    Text = Option.Name,
-                    AutoButtonColor = false,
-                    Name = "\0",
-                    BorderSizePixel = 0,
-                    BackgroundTransparency = 1,
-                    Position = UDim2New(0, 1, 0, (i - 1) * 15),
-                    Size = UDim2New(1, 0, 0, 15),
-                    TextSize = 12,
-                    ZIndex = 10003,
-                    BackgroundColor3 = FromRGB(255, 255, 255)
-                })  MenuButton:AddToTheme({TextColor3 = "Text"})
-                
-                Instances:Create("UIStroke", {
-                    Parent = MenuButton.Instance,
-                    LineJoinMode = Enum.LineJoinMode.Miter,
-                    Name = "\0",
-                    ZIndex = 10003
-                }):AddToTheme({Color = "Text Border"})
-                
-                MenuButton:Connect("MouseButton1Down", Option.Callback)
-            end
-            
-            -- Close menu when clicking outside (after small delay to avoid instant close)
-            task.delay(0.05, function()
-                if not (ContextMenu and ContextMenu.Instance) then
-                    return
-                end
-                
-                local CloseConnection
-                CloseConnection = UserInputService.InputBegan:Connect(function(Input)
-                    if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.MouseButton2 then
-                        if ContextMenu and ContextMenu.Instance then
-                            local MousePos = UserInputService:GetMouseLocation()
-                            local MenuPos = ContextMenu.Instance.AbsolutePosition
-                            local MenuSize = ContextMenu.Instance.AbsoluteSize
-                            
-                            if MousePos.X < MenuPos.X or MousePos.X > MenuPos.X + MenuSize.X or
-                               MousePos.Y < MenuPos.Y or MousePos.Y > MenuPos.Y + MenuSize.Y then
-                                CloseConnection:Disconnect()
-                                if ContextMenu then
-                                    ContextMenu:Clean()
-                                end
-                                ContextMenu = nil
-                                Library.CurrentColorpickerMenu = nil
-                            end
-                        else
-                            CloseConnection:Disconnect()
-                            Library.CurrentColorpickerMenu = nil
-                        end
-                    end
-                end)
-            end)
         end)
 
         local PaletteChanged
