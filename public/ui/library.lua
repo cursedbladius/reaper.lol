@@ -1897,22 +1897,25 @@ local Library do
             self:Update(true)
         end
 
-        -- Right-click context menu
-        local ContextMenu = nil
-        
+        -- Right-click context menu (uses global tracking)
         Items["ColorpickerButton"]:Connect("MouseButton1Down", function()
-            if ContextMenu and ContextMenu.Instance then
-                ContextMenu:Clean()
-                ContextMenu = nil
+            -- Close any open colorpicker context menu
+            if Library.CurrentColorpickerMenu and Library.CurrentColorpickerMenu.Instance then
+                Library.CurrentColorpickerMenu:Clean()
+                Library.CurrentColorpickerMenu = nil
             end
             Colorpicker:SetOpen(not Colorpicker.IsOpen)
         end)
         
         Items["ColorpickerButton"]:Connect("MouseButton2Down", function()
-            if ContextMenu and ContextMenu.Instance then
-                ContextMenu:Clean()
-                ContextMenu = nil
-                return
+            -- Close existing menu if clicking same or different colorpicker
+            if Library.CurrentColorpickerMenu and Library.CurrentColorpickerMenu.Instance then
+                Library.CurrentColorpickerMenu:Clean()
+                if Library.CurrentColorpickerMenu == ContextMenu then
+                    Library.CurrentColorpickerMenu = nil
+                    ContextMenu = nil
+                    return
+                end
             end
             
             ContextMenu = Instances:Create("Frame", {
@@ -1927,6 +1930,8 @@ local Library do
                 BackgroundColor3 = FromRGB(15, 15, 20)
             })  ContextMenu:AddToTheme({BackgroundColor3 = "Background", BorderColor3 = "Border"})
             
+            Library.CurrentColorpickerMenu = ContextMenu
+            
             Instances:Create("UIStroke", {
                 Parent = ContextMenu.Instance,
                 ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
@@ -1938,56 +1943,88 @@ local Library do
             
             local MenuOptions = {
                 {Name = "Copy", Callback = function()
-                    if setclipboard then
-                        -- Copy as hex for better compatibility
-                        setclipboard("#" .. Colorpicker.HexValue)
-                    end
+                    Library.CurrentColorpickerMenu = nil
                     if ContextMenu then
                         ContextMenu:Clean()
-                        ContextMenu = nil
+                    end
+                    
+                    if not setclipboard then
+                        warn("setclipboard not available")
+                        return
+                    end
+                    
+                    local hexValue = "#" .. Colorpicker.HexValue
+                    local success, err = pcall(function()
+                        setclipboard(hexValue)
+                    end)
+                    
+                    if success then
+                        print("Copied color:", hexValue)
+                    else
+                        warn("Failed to copy:", err)
                     end
                 end},
                 {Name = "Paste", Callback = function()
-                    local success, result = pcall(function()
-                        if getclipboard then
-                            local clipboard = getclipboard()
-                            if clipboard and #clipboard > 0 then
-                                -- Trim whitespace
-                                clipboard = clipboard:gsub("^%s*(.-)%s*$", "%1")
-                                
-                                -- Try hex format first (with or without #)
-                                local hex = clipboard:match("^#?([0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f])$")
-                                if hex then
-                                    Colorpicker:Set(FromHex(hex))
-                                    return
-                                end
-                                
-                                -- Try Color3 format: "255, 0, 0" or "255 0 0"
-                                local r, g, b = clipboard:match("^(%d+)%D+(%d+)%D+(%d+)$")
-                                if r and g and b then
-                                    Colorpicker:Set(FromRGB(tonumber(r), tonumber(g), tonumber(b)))
-                                    return
-                                end
-                            end
-                        end
-                    end)
-                    
-                    if not success then
-                        warn("Paste failed:", result)
-                    end
-                    
+                    Library.CurrentColorpickerMenu = nil
                     if ContextMenu then
                         ContextMenu:Clean()
-                        ContextMenu = nil
                     end
+                    
+                    if not getclipboard then
+                        warn("getclipboard not available")
+                        return
+                    end
+                    
+                    local clipboard = getclipboard()
+                    if not clipboard or #clipboard == 0 then
+                        warn("Clipboard is empty")
+                        return
+                    end
+                    
+                    -- Trim whitespace
+                    clipboard = clipboard:gsub("^%s*(.-)%s*$", "%1")
+                    
+                    -- Try hex format first (with or without #)
+                    local hex = clipboard:match("^#?([0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f])$")
+                    if hex then
+                        local success, err = pcall(function()
+                            Colorpicker:Set(FromHex(hex))
+                        end)
+                        if success then
+                            print("Pasted color:", hex)
+                        else
+                            warn("Failed to set hex color:", err)
+                        end
+                        return
+                    end
+                    
+                    -- Try Color3 format: "255, 0, 0" or "255 0 0"
+                    local r, g, b = clipboard:match("^(%d+)%D+(%d+)%D+(%d+)$")
+                    if r and g and b then
+                        local success, err = pcall(function()
+                            Colorpicker:Set(FromRGB(tonumber(r), tonumber(g), tonumber(b)))
+                        end)
+                        if success then
+                            print("Pasted RGB:", r, g, b)
+                        else
+                            warn("Failed to set RGB color:", err)
+                        end
+                        return
+                    end
+                    
+                    warn("Clipboard format not recognized:", clipboard)
                 end},
                 {Name = "Copy HEX", Callback = function()
-                    if setclipboard then
-                        setclipboard("#" .. Colorpicker.HexValue)
-                    end
+                    Library.CurrentColorpickerMenu = nil
                     if ContextMenu then
                         ContextMenu:Clean()
-                        ContextMenu = nil
+                    end
+                    
+                    if setclipboard then
+                        local hexValue = "#" .. Colorpicker.HexValue
+                        pcall(function()
+                            setclipboard(hexValue)
+                        end)
                     end
                 end}
             }
@@ -2020,25 +2057,35 @@ local Library do
                 MenuButton:Connect("MouseButton1Down", Option.Callback)
             end
             
-            -- Close menu when clicking outside
-            local CloseConnection
-            CloseConnection = UserInputService.InputBegan:Connect(function(Input)
-                if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.MouseButton2 then
-                    if ContextMenu and ContextMenu.Instance then
-                        local MousePos = UserInputService:GetMouseLocation()
-                        local MenuPos = ContextMenu.Instance.AbsolutePosition
-                        local MenuSize = ContextMenu.Instance.AbsoluteSize
-                        
-                        if MousePos.X < MenuPos.X or MousePos.X > MenuPos.X + MenuSize.X or
-                           MousePos.Y < MenuPos.Y or MousePos.Y > MenuPos.Y + MenuSize.Y then
-                            CloseConnection:Disconnect()
-                            ContextMenu:Clean()
-                            ContextMenu = nil
-                        end
-                    else
-                        CloseConnection:Disconnect()
-                    end
+            -- Close menu when clicking outside (after small delay to avoid instant close)
+            task.delay(0.05, function()
+                if not (ContextMenu and ContextMenu.Instance) then
+                    return
                 end
+                
+                local CloseConnection
+                CloseConnection = UserInputService.InputBegan:Connect(function(Input)
+                    if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.MouseButton2 then
+                        if ContextMenu and ContextMenu.Instance then
+                            local MousePos = UserInputService:GetMouseLocation()
+                            local MenuPos = ContextMenu.Instance.AbsolutePosition
+                            local MenuSize = ContextMenu.Instance.AbsoluteSize
+                            
+                            if MousePos.X < MenuPos.X or MousePos.X > MenuPos.X + MenuSize.X or
+                               MousePos.Y < MenuPos.Y or MousePos.Y > MenuPos.Y + MenuSize.Y then
+                                CloseConnection:Disconnect()
+                                if ContextMenu then
+                                    ContextMenu:Clean()
+                                end
+                                ContextMenu = nil
+                                Library.CurrentColorpickerMenu = nil
+                            end
+                        else
+                            CloseConnection:Disconnect()
+                            Library.CurrentColorpickerMenu = nil
+                        end
+                    end
+                end)
             end)
         end)
 
