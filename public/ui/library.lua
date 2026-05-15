@@ -2173,7 +2173,8 @@ local Library do
         end)
 
         if Data.Default then 
-            Colorpicker:Set(Data.Default, Data.Alpha)
+            local initAlpha = Data.DefaultAlpha or (type(Data.Alpha) == "number" and Data.Alpha) or 0
+            Colorpicker:Set(Data.Default, initAlpha)
         end
 
         Library.SetFlags[Data.Flag] = function(Color, Alpha)
