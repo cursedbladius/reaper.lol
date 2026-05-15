@@ -6,9 +6,8 @@ local ESP = {
     Settings = {
         -- Box Settings
         Box = true,
-        BoxType = "Full", -- "Full" or "Corner"
+        BoxType = "Full",
         BoxColor = Color3.fromRGB(255, 255, 255),
-        -- Filled Box
         BoxFilled = false,
         BoxFillGradient = true,
         BoxFillColorStart = Color3.fromRGB(255, 255, 255),
@@ -24,15 +23,15 @@ local ESP = {
         -- Health Bar
         HealthBar = true,
         HealthBarLerp = true,
-        HealthColor1 = Color3.fromRGB(255, 0, 0),     -- Low
-        HealthColor2 = Color3.fromRGB(255, 255, 0),   -- Mid
-        HealthColor3 = Color3.fromRGB(0, 255, 0),     -- High
+        HealthColor1 = Color3.fromRGB(255, 0, 0),
+        HealthColor2 = Color3.fromRGB(255, 255, 0),
+        HealthColor3 = Color3.fromRGB(0, 255, 0),
         -- Armor Bar
         ArmorBar = false,
         ArmorBarLerp = true,
-        ArmorColor1 = Color3.fromRGB(0, 0, 255),      -- Full
-        ArmorColor2 = Color3.fromRGB(135, 206, 235),  -- Mid
-        ArmorColor3 = Color3.fromRGB(1, 0, 0),        -- Low
+        ArmorColor1 = Color3.fromRGB(0, 0, 255),
+        ArmorColor2 = Color3.fromRGB(135, 206, 235),
+        ArmorColor3 = Color3.fromRGB(1, 0, 0),
         -- General
         MaxDistance = 2000,
         TeamCheck = true,
@@ -101,6 +100,78 @@ local function IsVisible(Character)
     RaycastParams.FilterType = Enum.RaycastFilterType.Blacklist
     local Result = workspace:Raycast(Origin, Direction, RaycastParams)
     return not Result
+end
+
+-- Get Dynamic Character Bounds (left arm to right arm, head to feet)
+local function GetCharacterBounds(Character)
+    local Humanoid = GetHumanoid(Character)
+    if not Humanoid then return nil end
+    
+    local RootPart = Character:FindFirstChild("HumanoidRootPart")
+    if not RootPart then return nil end
+    
+    -- Get all limb positions in screen space
+    local limbNames = {
+        "Head",
+        "LeftUpperArm", "LeftLowerArm", "LeftHand",
+        "RightUpperArm", "RightLowerArm", "RightHand",
+        "LeftUpperLeg", "LeftLowerLeg", "LeftFoot",
+        "RightUpperLeg", "RightLowerLeg", "RightFoot",
+        "UpperTorso", "LowerTorso",
+        -- R15/R6 fallbacks
+        "Left Arm", "Right Arm", "Left Leg", "Right Leg", "Torso"
+    }
+    
+    local minX, minY = math.huge, math.huge
+    local maxX, maxY = -math.huge, -math.huge
+    local hasValidPoint = false
+    local centerPos = nil
+    
+    for _, limbName in ipairs(limbNames) do
+        local limb = Character:FindFirstChild(limbName)
+        if limb and limb:IsA("BasePart") then
+            local screenPos, onScreen = WorldToScreen(limb.Position)
+            if onScreen then
+                hasValidPoint = true
+                minX = math.min(minX, screenPos.X)
+                minY = math.min(minY, screenPos.Y)
+                maxX = math.max(maxX, screenPos.X)
+                maxY = math.max(maxY, screenPos.Y)
+                
+                -- Also check extremities for better coverage
+                if limb.Name == "Head" then
+                    local topPos = WorldToScreen(limb.Position + Vector3.new(0, limb.Size.Y/2, 0))
+                    if topPos then
+                        minY = math.min(minY, topPos.Y)
+                    end
+                end
+            end
+        end
+    end
+    
+    -- Fallback to root part position for center
+    if RootPart then
+        centerPos = WorldToScreen(RootPart.Position)
+    end
+    
+    if not hasValidPoint or not centerPos then
+        return nil
+    end
+    
+    -- Add padding
+    local padding = 5
+    minX = minX - padding
+    minY = minY - padding
+    maxX = maxX + padding
+    maxY = maxY + padding
+    
+    return {
+        Min = Vector2.new(minX, minY),
+        Max = Vector2.new(maxX, maxY),
+        Center = centerPos,
+        Width = maxX - minX,
+        Height = maxY - minY
+    }
 end
 
 -- Create Text Label
@@ -249,7 +320,6 @@ function ESP:ClearPlayer(Player)
     local cache = self.Cache[Player]
     if not cache then return end
     
-    -- Hide Box
     if cache.Box then
         if cache.Box.Square then cache.Box.Square.Visible = false end
         if cache.Box.Outline then cache.Box.Outline.Visible = false end
@@ -259,14 +329,12 @@ function ESP:ClearPlayer(Player)
         end
     end
     
-    -- Hide Text
     if cache.Text then
         if cache.Text.Name then cache.Text.Name.Visible = false end
         if cache.Text.Tool then cache.Text.Tool.Visible = false end
         if cache.Text.Distance then cache.Text.Distance.Visible = false end
     end
     
-    -- Hide Bars
     if cache.Bars then
         if cache.Bars.Health and cache.Bars.Health.Outline then
             cache.Bars.Health.Outline.Visible = false
@@ -282,7 +350,6 @@ function ESP:RemovePlayer(Player)
     self:ClearPlayer(Player)
     local cache = self.Cache[Player]
     if cache then
-        -- Remove Drawing objects
         if cache.Box then
             if cache.Box.Square then cache.Box.Square:Remove() end
             if cache.Box.Outline then cache.Box.Outline:Remove() end
@@ -292,7 +359,6 @@ function ESP:RemovePlayer(Player)
             end
         end
         
-        -- Remove ScreenGuis
         if cache.Text then
             if cache.Text.Name and cache.Text.Name.Parent then
                 cache.Text.Name.Parent:Destroy()
@@ -317,7 +383,29 @@ function ESP:RemovePlayer(Player)
     self.Cache[Player] = nil
 end
 
--- Update Player ESP
+-- Health bar 3-color gradient
+local function GetHealthColor(HealthPercent)
+    if HealthPercent > 0.5 then
+        local t = (HealthPercent - 0.5) * 2
+        return ESP.Settings.HealthColor2:Lerp(ESP.Settings.HealthColor3, t)
+    else
+        local t = HealthPercent * 2
+        return ESP.Settings.HealthColor1:Lerp(ESP.Settings.HealthColor2, t)
+    end
+end
+
+-- Armor bar 3-color gradient
+local function GetArmorColor(ArmorPercent)
+    if ArmorPercent > 0.5 then
+        local t = (ArmorPercent - 0.5) * 2
+        return ESP.Settings.ArmorColor2:Lerp(ESP.Settings.ArmorColor1, t)
+    else
+        local t = ArmorPercent * 2
+        return ESP.Settings.ArmorColor3:Lerp(ESP.Settings.ArmorColor2, t)
+    end
+end
+
+-- Update Player ESP with dynamic limb-based box
 function ESP:UpdatePlayer(Player)
     if not self.Enabled then
         self:ClearPlayer(Player)
@@ -336,15 +424,26 @@ function ESP:UpdatePlayer(Player)
         return
     end
     
-    local HumanoidRootPart = Character:FindFirstChild("HumanoidRootPart")
     local Humanoid = GetHumanoid(Character)
-    
-    if not HumanoidRootPart or not Humanoid then
+    if not Humanoid then
         self:ClearPlayer(Player)
         return
     end
     
-    local Position, OnScreen, Distance = WorldToScreen(HumanoidRootPart.Position)
+    -- Get dynamic bounds based on character limbs
+    local bounds = GetCharacterBounds(Character)
+    if not bounds then
+        self:ClearPlayer(Player)
+        return
+    end
+    
+    local RootPart = Character:FindFirstChild("HumanoidRootPart")
+    if not RootPart then
+        self:ClearPlayer(Player)
+        return
+    end
+    
+    local _, OnScreen, Distance = WorldToScreen(RootPart.Position)
     
     if not OnScreen or Distance > self.Settings.MaxDistance then
         self:ClearPlayer(Player)
@@ -361,12 +460,9 @@ function ESP:UpdatePlayer(Player)
         return
     end
     
-    -- Calculate box dimensions
-    local rootPos = Camera:WorldToViewportPoint(HumanoidRootPart.Position)
-    local charSize = (Camera:WorldToViewportPoint(HumanoidRootPart.Position - Vector3.new(0, 1, 0)).Y - Camera:WorldToViewportPoint(HumanoidRootPart.Position + Vector3.new(0, 3, 0)).Y) / 2
-    local size = Vector2.new(math.floor(charSize * 1.5), math.floor(charSize * 3.2))
-    local position = Vector2.new(math.floor(rootPos.X - charSize * 1.5 / 2), math.floor(rootPos.Y - charSize * 3 / 2))
-    
+    -- Use dynamic bounds
+    local size = Vector2.new(bounds.Width, bounds.Height)
+    local position = bounds.Min
     local posX = position.X
     local posY = position.Y - guiInset.Y
     
@@ -377,7 +473,6 @@ function ESP:UpdatePlayer(Player)
             local outline = cache.Box.Outline
             local inline = cache.Box.Inline
             
-            -- Main square
             square.Visible = true
             square.Position = position
             square.Size = size
@@ -386,7 +481,6 @@ function ESP:UpdatePlayer(Player)
             square.Filled = false
             square.ZIndex = 9
             
-            -- Outline (black outer)
             outline.Visible = true
             outline.Position = position - Vector2.new(1, 1)
             outline.Size = size + Vector2.new(2, 2)
@@ -395,7 +489,6 @@ function ESP:UpdatePlayer(Player)
             outline.Filled = false
             outline.ZIndex = 8
             
-            -- Inline (black inner)
             inline.Visible = true
             inline.Position = position + Vector2.new(1, 1)
             inline.Size = size - Vector2.new(2, 2)
@@ -404,7 +497,6 @@ function ESP:UpdatePlayer(Player)
             inline.Filled = false
             inline.ZIndex = 10
             
-            -- Filled Box with Gradient
             if self.Settings.BoxFilled then
                 local filled = cache.Box.Filled.Frame
                 filled.Position = UDim2.new(0, posX, 0, posY)
@@ -426,12 +518,10 @@ function ESP:UpdatePlayer(Player)
                 cache.Box.Filled.Frame.Visible = false
             end
         else
-            -- Corner Box - hide full box elements
             cache.Box.Square.Visible = false
             cache.Box.Outline.Visible = false
             cache.Box.Inline.Visible = false
             cache.Box.Filled.Frame.Visible = false
-            -- TODO: Implement corner box drawing
         end
     else
         cache.Box.Square.Visible = false
@@ -445,7 +535,6 @@ function ESP:UpdatePlayer(Player)
         local Health, MaxHealth = GetHealth(Character)
         local targetHealth = math.clamp(Health / MaxHealth, 0, 1)
         
-        -- Lerp for smooth animation
         local lastHealth = cache.Bars.Health.LastHealth or targetHealth
         local lerpedHealth = self.Settings.HealthBarLerp 
             and (lastHealth + (targetHealth - lastHealth) * 0.1) 
@@ -469,7 +558,6 @@ function ESP:UpdatePlayer(Player)
         fill.Position = UDim2.new(0, 1, 0, (1 - lerpedHealth) * barHeight + 1)
         fill.Size = UDim2.new(0, barWidth, 0, lerpedHealth * barHeight)
         
-        -- 3-color gradient
         gradient.Color = ColorSequence.new({
             ColorSequenceKeypoint.new(0, self.Settings.HealthColor1),
             ColorSequenceKeypoint.new(0.5, self.Settings.HealthColor2),
@@ -484,7 +572,6 @@ function ESP:UpdatePlayer(Player)
         local Armor, MaxArmor = GetArmor(Character)
         local targetArmor = math.clamp(Armor / MaxArmor, 0, 1)
         
-        -- Lerp for smooth animation
         local lastArmor = cache.Bars.Armor.LastArmor or targetArmor
         local lerpedArmor = self.Settings.ArmorBarLerp 
             and (lastArmor + (targetArmor - lastArmor) * 0.1) 
@@ -508,7 +595,6 @@ function ESP:UpdatePlayer(Player)
         fill.Position = UDim2.new(0, 1, 0, (1 - lerpedArmor) * barHeight + 1)
         fill.Size = UDim2.new(0, barWidth, 0, lerpedArmor * barHeight)
         
-        -- 3-color gradient
         gradient.Color = ColorSequence.new({
             ColorSequenceKeypoint.new(0, self.Settings.ArmorColor1),
             ColorSequenceKeypoint.new(0.5, self.Settings.ArmorColor2),
@@ -521,19 +607,16 @@ function ESP:UpdatePlayer(Player)
     -- Update Text
     if self.Settings.Name or self.Settings.Tool or self.Settings.Distance then
         local baseX = posX + (size.X / 2)
-        local textOffset = 15
         
-        -- Name
         if self.Settings.Name then
             cache.Text.Name.Visible = true
             cache.Text.Name.Text = Player.Name
             cache.Text.Name.TextColor3 = self.Settings.NameColor
-            cache.Text.Name.Position = UDim2.new(0, baseX - 50, 0, posY - textOffset)
+            cache.Text.Name.Position = UDim2.new(0, baseX - 50, 0, posY - 18)
         else
             cache.Text.Name.Visible = false
         end
         
-        -- Tool
         if self.Settings.Tool then
             local tool = Character:FindFirstChildOfClass("Tool")
             cache.Text.Tool.Visible = true
@@ -544,7 +627,6 @@ function ESP:UpdatePlayer(Player)
             cache.Text.Tool.Visible = false
         end
         
-        -- Distance
         if self.Settings.Distance then
             local meters = Distance * 0.28
             cache.Text.Distance.Visible = true
@@ -606,14 +688,12 @@ function ESP:SetSetting(Name, Value)
 end
 
 function ESP:Initialize()
-    -- Connect to existing players
     for _, Player in ipairs(Players:GetPlayers()) do
         if Player ~= LocalPlayer then
             self:InitPlayer(Player)
         end
     end
     
-    -- Connect events
     table.insert(self.Connections, Players.PlayerAdded:Connect(PlayerAdded))
     table.insert(self.Connections, Players.PlayerRemoving:Connect(PlayerRemoving))
     table.insert(self.Connections, RunService.Heartbeat:Connect(function()
