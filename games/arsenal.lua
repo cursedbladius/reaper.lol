@@ -390,12 +390,43 @@ function Arsenal:GetToolTargets(playerName)
             break
         end
     end
-    if not wrap then return targets end
+    if wrap then
+        for _, child in pairs(wrap:GetChildren()) do
+            if child.Name == "Gun" then
+                table.insert(targets, child)
+                break
+            end
+        end
+    end
 
-    for _, child in pairs(wrap:GetChildren()) do
-        if child.Name == "Gun" then
-            table.insert(targets, child)
-            break
+    local localPlayer = game:GetService("Players").LocalPlayer
+    local nrpbs = nil
+    for _, child in pairs(localPlayer:GetChildren()) do
+        if child.Name == "NRPBS" then nrpbs = child break end
+    end
+    if nrpbs then
+        local equippedTool = nil
+        for _, child in pairs(nrpbs:GetChildren()) do
+            if child.Name == "EquippedTool" then equippedTool = child break end
+        end
+        if equippedTool and equippedTool.Value ~= "" then
+            local weapons = nil
+            for _, child in pairs(game:GetService("ReplicatedStorage"):GetChildren()) do
+                if child.Name == "Weapons" then weapons = child break end
+            end
+            if weapons then
+                for _, child in pairs(weapons:GetChildren()) do
+                    if child.Name == equippedTool.Value then
+                        for _, sub in pairs(child:GetChildren()) do
+                            if sub.Name == "Model" then
+                                table.insert(targets, sub)
+                                break
+                            end
+                        end
+                        break
+                    end
+                end
+            end
         end
     end
 
