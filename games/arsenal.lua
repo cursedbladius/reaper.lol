@@ -213,6 +213,8 @@ function Arsenal:StartActor()
                     for itemName, _ in next, items do
                         InventoryData[cat][itemName] = InventoryData[cat][itemName] or 1
                     end
+                else
+                    warn("[Arsenal] Category not found in inventory:", cat)
                 end
             end
         end
@@ -323,7 +325,6 @@ function Arsenal:SetSelectedItems(category, items)
     elseif category == "Skins" then
         self:SetCharacterSkin(last)
     end
-    self:_updateSelectedFlag()
 end
 
 Arsenal._selectedItemsMap = {}
