@@ -106,6 +106,26 @@ local function CreateESPObject()
     -- Distance text (centered below box)
     obj.Distance = NewText({Size = 13, Center = true, Outline = true, OutlineColor = Color3.new(0, 0, 0)})
 
+    -- Skeleton lines (outline + colored for each bone)
+    local MAX_BONES = 14
+    obj.SkeletonOutlines = {}
+    obj.SkeletonLines = {}
+    for i = 1, MAX_BONES do
+        local outline = Drawing.new("Line")
+        outline.Visible = false
+        outline.Thickness = 3
+        outline.Color = Color3.new(0, 0, 0)
+        outline.Transparency = 0.65
+        obj.SkeletonOutlines[i] = outline
+
+        local line = Drawing.new("Line")
+        line.Visible = false
+        line.Thickness = 1
+        line.Color = Color3.new(1, 1, 1)
+        line.Transparency = 1
+        obj.SkeletonLines[i] = line
+    end
+
     -- Smoothed health value for animation
     obj.SmoothedHealth = 1
 
@@ -417,6 +437,80 @@ local function UpdateESP()
             obj.HealthBar.Visible = false
             for _, line in ipairs(obj.GradientLines) do
                 line.Visible = false
+            end
+        end
+
+        -- ═══════════════════════ SKELETON ESP ═══════════════════════
+        if ESP.Settings.Skeleton then
+            local bones = {}
+
+            -- Detect R15 vs R6
+            local isR15 = character:FindFirstChild("UpperTorso") ~= nil
+
+            if isR15 then
+                bones = {
+                    {"Head", "UpperTorso"},
+                    {"UpperTorso", "LowerTorso"},
+                    {"UpperTorso", "LeftUpperArm"},
+                    {"LeftUpperArm", "LeftLowerArm"},
+                    {"LeftLowerArm", "LeftHand"},
+                    {"UpperTorso", "RightUpperArm"},
+                    {"RightUpperArm", "RightLowerArm"},
+                    {"RightLowerArm", "RightHand"},
+                    {"LowerTorso", "LeftUpperLeg"},
+                    {"LeftUpperLeg", "LeftLowerLeg"},
+                    {"LeftLowerLeg", "LeftFoot"},
+                    {"LowerTorso", "RightUpperLeg"},
+                    {"RightUpperLeg", "RightLowerLeg"},
+                    {"RightLowerLeg", "RightFoot"},
+                }
+            else
+                bones = {
+                    {"Head", "Torso"},
+                    {"Torso", "Left Arm"},
+                    {"Torso", "Right Arm"},
+                    {"Torso", "Left Leg"},
+                    {"Torso", "Right Leg"},
+                }
+            end
+
+            local boneIndex = 0
+            for _, bone in ipairs(bones) do
+                local partA = character:FindFirstChild(bone[1])
+                local partB = character:FindFirstChild(bone[2])
+
+                if partA and partB then
+                    local posA, visA = Camera:WorldToViewportPoint(partA.Position)
+                    local posB, visB = Camera:WorldToViewportPoint(partB.Position)
+
+                    if visA and visB then
+                        boneIndex = boneIndex + 1
+                        local from = Vector2.new(posA.X, posA.Y)
+                        local to = Vector2.new(posB.X, posB.Y)
+
+                        -- Outline
+                        obj.SkeletonOutlines[boneIndex].From = from
+                        obj.SkeletonOutlines[boneIndex].To = to
+                        obj.SkeletonOutlines[boneIndex].Visible = true
+
+                        -- Colored line
+                        obj.SkeletonLines[boneIndex].From = from
+                        obj.SkeletonLines[boneIndex].To = to
+                        obj.SkeletonLines[boneIndex].Color = ESP.Settings.SkeletonColor
+                        obj.SkeletonLines[boneIndex].Visible = true
+                    end
+                end
+            end
+
+            -- Hide unused lines
+            for i = boneIndex + 1, #obj.SkeletonOutlines do
+                obj.SkeletonOutlines[i].Visible = false
+                obj.SkeletonLines[i].Visible = false
+            end
+        else
+            for i = 1, #obj.SkeletonOutlines do
+                obj.SkeletonOutlines[i].Visible = false
+                obj.SkeletonLines[i].Visible = false
             end
         end
 
