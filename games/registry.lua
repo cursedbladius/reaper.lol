@@ -2,12 +2,12 @@ local Registry = {}
 
 local GameAdapters = {}
 
-function Registry:Register(placeId, adapter)
-    GameAdapters[placeId] = adapter
+function Registry:Register(id, adapter)
+    GameAdapters[id] = adapter
 end
 
 function Registry:Get()
-    return GameAdapters[game.PlaceId] or nil
+    return GameAdapters[game.PlaceId] or GameAdapters[game.GameId] or nil
 end
 
 return Registry

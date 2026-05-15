@@ -10,7 +10,9 @@ local GameRegistry = loadstring(game:HttpGet("https://reaper-lol.pages.dev/games
 local DaHoodAdapter = loadstring(game:HttpGet("https://reaper-lol.pages.dev/games/da_hood.lua"))()
 local CriminalityAdapter = loadstring(game:HttpGet("https://reaper-lol.pages.dev/games/criminality.lua"))()
 GameRegistry:Register(4588604953, DaHoodAdapter)
+GameRegistry:Register(2788229376, DaHoodAdapter)
 GameRegistry:Register(15169303036, CriminalityAdapter)
+GameRegistry:Register(1494262959, CriminalityAdapter)
 
 ToolModifier:Initialize(GameRegistry:Get())
 
