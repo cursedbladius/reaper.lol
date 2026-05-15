@@ -208,11 +208,7 @@ if game.GameId == 111958650 or game.PlaceId == 286090429 then
         Multi = true,
         Items = ArsenalAdapter:GetItemNames("Melees"),
         Callback = function(Value)
-            local selected = {}
-            for name, state in next, Value do
-                if state then table.insert(selected, name) end
-            end
-            ArsenalAdapter:SetSelectedItems("Melees", selected)
+            ArsenalAdapter:SetSelectedItems("Melees", Value)
         end
     })
     SkinSection:Dropdown({
@@ -221,11 +217,7 @@ if game.GameId == 111958650 or game.PlaceId == 286090429 then
         Multi = true,
         Items = ArsenalAdapter:GetItemNames("WeaponSkins"),
         Callback = function(Value)
-            local selected = {}
-            for name, state in next, Value do
-                if state then table.insert(selected, name) end
-            end
-            ArsenalAdapter:SetSelectedItems("WeaponSkins", selected)
+            ArsenalAdapter:SetSelectedItems("WeaponSkins", Value)
         end
     })
     SkinSection:Dropdown({
@@ -234,11 +226,7 @@ if game.GameId == 111958650 or game.PlaceId == 286090429 then
         Multi = true,
         Items = ArsenalAdapter:GetItemNames("KillEffects"),
         Callback = function(Value)
-            local selected = {}
-            for name, state in next, Value do
-                if state then table.insert(selected, name) end
-            end
-            ArsenalAdapter:SetSelectedItems("KillEffects", selected)
+            ArsenalAdapter:SetSelectedItems("KillEffects", Value)
         end
     })
     SkinSection:Dropdown({
@@ -247,11 +235,7 @@ if game.GameId == 111958650 or game.PlaceId == 286090429 then
         Multi = true,
         Items = ArsenalAdapter:GetItemNames("Announcers"),
         Callback = function(Value)
-            local selected = {}
-            for name, state in next, Value do
-                if state then table.insert(selected, name) end
-            end
-            ArsenalAdapter:SetSelectedItems("Announcers", selected)
+            ArsenalAdapter:SetSelectedItems("Announcers", Value)
         end
     })
     SkinSection:Dropdown({
@@ -260,11 +244,7 @@ if game.GameId == 111958650 or game.PlaceId == 286090429 then
         Multi = true,
         Items = ArsenalAdapter:GetItemNames("Skins"),
         Callback = function(Value)
-            local selected = {}
-            for name, state in next, Value do
-                if state then table.insert(selected, name) end
-            end
-            ArsenalAdapter:SetSelectedItems("Skins", selected)
+            ArsenalAdapter:SetSelectedItems("Skins", Value)
         end
     })
 end
