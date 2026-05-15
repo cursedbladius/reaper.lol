@@ -351,10 +351,11 @@ local function UpdateESP()
             -- Colored fill (grows from bottom)
             obj.HealthBar.Position = Vector2.new(barX, barY + (barHeight - fillHeight))
             obj.HealthBar.Size = Vector2.new(barWidth, fillHeight)
+            local healthColor = ESP.Settings.HealthColor
             obj.HealthBar.Color = Color3.fromRGB(
-                math.floor(255 * (1 - smoothed)),
-                math.floor(255 * smoothed),
-                0
+                math.floor(healthColor.R * 255 * smoothed + 255 * (1 - smoothed)),
+                math.floor(healthColor.G * 255 * smoothed),
+                math.floor(healthColor.B * 255 * smoothed)
             )
             obj.HealthBar.Transparency = 1
             obj.HealthBar.Visible = true
