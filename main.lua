@@ -1,7 +1,8 @@
 local LoadStart = os.clock()
 local _src = game:HttpGet("https://reaper-lol.pages.dev/ui/library.lua")
-if not _src or #_src < 100 then warn("[LOAD] library.lua fetch failed, got:", _src and #_src or "nil") end
-local Library = loadstring(_src)()
+local _fn, _err = loadstring(_src)
+if not _fn then warn("[LOAD] library.lua parse error:", _err, "| first 200 chars:", string.sub(_src or "", 1, 200)) end
+local Library = _fn()
 
 local ESP = loadstring(game:HttpGet("https://reaper-lol.pages.dev/features/visuals/esp.lua"))()
 ESP:Initialize()
