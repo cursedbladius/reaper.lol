@@ -133,10 +133,120 @@ end})
 -- Visuals Tab - Right Side (Extras Section)
 local ExtrasSection = VisualsTab:Section({Name = "Extras", Side = 2})
 
-ExtrasSection:Toggle({Name = "Hitsound", Flag = "Hitsound", Default = false})
-ExtrasSection:Toggle({Name = "Hit Chams", Flag = "HitChams", Default = false})
-ExtrasSection:Toggle({Name = "Health Indicators", Flag = "HealthIndicators", Default = false})
-ExtrasSection:Toggle({Name = "Third Person", Flag = "ThirdPerson", Default = false})
+local ToolModifierEnabled = false
+local ToolModifierColor = Color3.fromRGB(255, 255, 255)
+local ToolModifierAlpha = 0
+local ToolModifierMaterial = "Default"
+local OriginalToolProps = {}
+local CurrentTool = nil
+
+local MaterialMap = {
+    ["Default"] = nil,
+    ["ForceField"] = Enum.Material.ForceField,
+}
+
+local function ResetToolModifier()
+    for part, props in pairs(OriginalToolProps) do
+        if part and part.Parent then
+            pcall(function()
+                part.Color = props.Color
+                part.Material = props.Material
+                part.Transparency = props.Transparency
+                if props.Mesh and props.VertexColor then
+                    props.Mesh.VertexColor = props.VertexColor
+                end
+            end)
+        end
+    end
+    OriginalToolProps = {}
+end
+
+local function ApplyToolModifier()
+    local character = game:GetService("Players").LocalPlayer and game:GetService("Players").LocalPlayer.Character
+    if not character then return end
+    local tool = character:FindFirstChildOfClass("Tool")
+    if not tool then return end
+
+    -- Reset stored props when switching tools
+    if tool ~= CurrentTool then
+        ResetToolModifier()
+        CurrentTool = tool
+    end
+
+    for _, part in ipairs(tool:GetDescendants()) do
+        if part:IsA("BasePart") then
+            if not OriginalToolProps[part] then
+                local mesh = part:FindFirstChildOfClass("SpecialMesh")
+                OriginalToolProps[part] = {
+                    Color = part.Color,
+                    Material = part.Material,
+                    Transparency = part.Transparency,
+                    Mesh = mesh,
+                    VertexColor = mesh and mesh.VertexColor or nil
+                }
+            end
+
+            -- Skip parts that are originally fully transparent (invisible)
+            if OriginalToolProps[part].Transparency >= 1 then continue end
+
+            if ToolModifierMaterial == "ForceField" then
+                part.Material = Enum.Material.ForceField
+            else
+                part.Color = ToolModifierColor
+                part.Transparency = ToolModifierAlpha
+                part.Material = OriginalToolProps[part].Material
+                -- Tint textured meshes via VertexColor
+                if OriginalToolProps[part].Mesh then
+                    pcall(function()
+                        OriginalToolProps[part].Mesh.VertexColor = Vector3.new(
+                            ToolModifierColor.R,
+                            ToolModifierColor.G,
+                            ToolModifierColor.B
+                        )
+                    end)
+                end
+            end
+        end
+    end
+end
+
+ExtrasSection:Toggle({Name = "Tool Modifier", Flag = "ToolModifier", Default = false, Callback = function(Value)
+    ToolModifierEnabled = Value
+    if not Value then
+        ResetToolModifier()
+    end
+end}):Colorpicker({Name = "", Flag = "ToolModifierColor", Default = Color3.fromRGB(255, 255, 255), Callback = function(Value, Alpha)
+    ToolModifierColor = Value
+    ToolModifierAlpha = Alpha or 0
+end})
+
+local ToolMaterialDropdown
+ToolMaterialDropdown = ExtrasSection:Dropdown({
+    Name = "Tool Material",
+    Flag = "ToolModifierMaterial",
+    Default = "Default",
+    Items = {"Default", "ForceField"},
+    Callback = function(Value)
+        if Value == nil then
+            ToolMaterialDropdown:Set("Default")
+            return
+        end
+        ToolModifierMaterial = Value
+        if Value == "Default" and ToolModifierEnabled then
+            for part, props in pairs(OriginalToolProps) do
+                if part and part.Parent then
+                    pcall(function() part.Material = props.Material end)
+                end
+            end
+        end
+    end
+})
+
+game:GetService("RunService").RenderStepped:Connect(function()
+    if ToolModifierEnabled then
+        ApplyToolModifier()
+    end
+end)
 
 -- Movement Tab (Empty sections)
 local WalkSection = MovementTab:Section({Name = "Walk", Side = 1})
@@ -151,6 +261,9 @@ Library.Unload = function(self)
     if ESP then
         ESP:Unload()
     end
+    -- Reset tool modifier
+    ResetToolModifier()
+    ToolModifierEnabled = false
     -- Call original unload
     OriginalUnload(self)
 end
