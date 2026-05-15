@@ -28,6 +28,13 @@ function ToolModifier:Reset()
         pcall(function() hl:Destroy() end)
     end
     GameHighlights = {}
+    for part, orig in pairs(GameOriginals) do
+        pcall(function()
+            part.Material = orig.Material
+            part.Color = orig.Color
+            part.BrickColor = orig.BrickColor
+        end)
+    end
     GameOriginals = {}
     for part, data in pairs(ToolPartData) do
         pcall(function()
