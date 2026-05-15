@@ -413,81 +413,130 @@ function Arsenal:SetCharacterSkin(skinName)
     end)
 end
 
-function Arsenal:NoRecoil()
-    local Weapons = game:GetService("ReplicatedStorage"):FindFirstChild("Weapons")
-    if not Weapons then
+local _origWeaponValues = {}
+local _origCurse = nil
+
+local function GetWeaponsFolder()
+    local Weapons = nil
+    pcall(function()
         for _, child in pairs(game:GetService("ReplicatedStorage"):GetChildren()) do
             if child.Name == "Weapons" then Weapons = child break end
         end
-    end
-    if not Weapons then return end
-    for _, v in pairs(Weapons:GetChildren()) do
+    end)
+    return Weapons
+end
+
+local function SaveOriginal(weapon, prop)
+    local key = weapon.Name .. "_" .. prop
+    if _origWeaponValues[key] == nil then
         pcall(function()
-            if v:FindFirstChild("RecoilControl") then
-                v.RecoilControl.Value = 0
+            for _, child in pairs(weapon:GetChildren()) do
+                if child.Name == prop then
+                    _origWeaponValues[key] = child.Value
+                    break
+                end
             end
         end)
     end
 end
 
-function Arsenal:NoSpread()
-    local Weapons = game:GetService("ReplicatedStorage"):FindFirstChild("Weapons")
-    if not Weapons then
-        for _, child in pairs(game:GetService("ReplicatedStorage"):GetChildren()) do
-            if child.Name == "Weapons" then Weapons = child break end
-        end
-    end
-    if not Weapons then return end
-    for _, v in pairs(Weapons:GetChildren()) do
+local function RestoreOriginal(weapon, prop)
+    local key = weapon.Name .. "_" .. prop
+    if _origWeaponValues[key] ~= nil then
         pcall(function()
-            if v:FindFirstChild("MaxSpread") then
-                v.MaxSpread.Value = 0.01
-            end
-            if v:FindFirstChild("SpreadRecovery") then
-                v.SpreadRecovery.Value = 0.01
+            for _, child in pairs(weapon:GetChildren()) do
+                if child.Name == prop then
+                    child.Value = _origWeaponValues[key]
+                    break
+                end
             end
         end)
     end
 end
 
-function Arsenal:FastReload()
-    local Weapons = game:GetService("ReplicatedStorage"):FindFirstChild("Weapons")
-    if not Weapons then
-        for _, child in pairs(game:GetService("ReplicatedStorage"):GetChildren()) do
-            if child.Name == "Weapons" then Weapons = child break end
-        end
-    end
+function Arsenal:NoRecoil(enabled)
+    local Weapons = GetWeaponsFolder()
     if not Weapons then return end
     for _, v in pairs(Weapons:GetChildren()) do
         pcall(function()
-            if v:FindFirstChild("ReloadTime") then
-                v.ReloadTime.Value = 0.01
+            for _, child in pairs(v:GetChildren()) do
+                if child.Name == "RecoilControl" then
+                    if enabled then
+                        SaveOriginal(v, "RecoilControl")
+                        child.Value = 0
+                    else
+                        RestoreOriginal(v, "RecoilControl")
+                    end
+                    break
+                end
             end
         end)
     end
 end
 
-function Arsenal:FastFireRate()
-    local Weapons = game:GetService("ReplicatedStorage"):FindFirstChild("Weapons")
-    if not Weapons then
-        for _, child in pairs(game:GetService("ReplicatedStorage"):GetChildren()) do
-            if child.Name == "Weapons" then Weapons = child break end
-        end
-    end
+function Arsenal:NoSpread(enabled)
+    local Weapons = GetWeaponsFolder()
     if not Weapons then return end
     for _, v in pairs(Weapons:GetChildren()) do
         pcall(function()
-            if v:FindFirstChild("FireRate") then
-                v.FireRate.Value = 0.01
-            end
-            if v:FindFirstChild("BFireRate") then
-                v.BFireRate.Value = 0.01
+            if enabled then
+                SaveOriginal(v, "MaxSpread")
+                SaveOriginal(v, "SpreadRecovery")
+                for _, child in pairs(v:GetChildren()) do
+                    if child.Name == "MaxSpread" then child.Value = 0.01
+                    elseif child.Name == "SpreadRecovery" then child.Value = 0.01 end
+                end
+            else
+                RestoreOriginal(v, "MaxSpread")
+                RestoreOriginal(v, "SpreadRecovery")
             end
         end)
     end
 end
 
-function Arsenal:InfiniteAmmo()
+function Arsenal:FastReload(enabled)
+    local Weapons = GetWeaponsFolder()
+    if not Weapons then return end
+    for _, v in pairs(Weapons:GetChildren()) do
+        pcall(function()
+            if enabled then
+                SaveOriginal(v, "ReloadTime")
+                for _, child in pairs(v:GetChildren()) do
+                    if child.Name == "ReloadTime" then child.Value = 0.01 break end
+                end
+            else
+                RestoreOriginal(v, "ReloadTime")
+            end
+        end)
+    end
+end
+
+function Arsenal:FireRateModifier(enabled, multiplier)
+    local Weapons = GetWeaponsFolder()
+    if not Weapons then return end
+    multiplier = multiplier or 1
+    for _, v in pairs(Weapons:GetChildren()) do
+        pcall(function()
+            if enabled then
+                SaveOriginal(v, "FireRate")
+                SaveOriginal(v, "BFireRate")
+                for _, child in pairs(v:GetChildren()) do
+                    local key = v.Name .. "_" .. child.Name
+                    if child.Name == "FireRate" and _origWeaponValues[key] then
+                        child.Value = _origWeaponValues[key] / math.max(multiplier, 0.1)
+                    elseif child.Name == "BFireRate" and _origWeaponValues[key] then
+                        child.Value = _origWeaponValues[key] / math.max(multiplier, 0.1)
+                    end
+                end
+            else
+                RestoreOriginal(v, "FireRate")
+                RestoreOriginal(v, "BFireRate")
+            end
+        end)
+    end
+end
+
+function Arsenal:InfiniteAmmo(enabled)
     pcall(function()
         local repStorage = game:GetService("ReplicatedStorage")
         local wkspc = nil
@@ -500,7 +549,17 @@ function Arsenal:InfiniteAmmo()
                 if child.Name == "CurrentCurse" then curse = child break end
             end
             if curse then
-                curse.Value = "Infinite Ammo"
+                if enabled then
+                    if _origCurse == nil then
+                        _origCurse = curse.Value
+                    end
+                    curse.Value = "Infinite Ammo"
+                else
+                    if _origCurse ~= nil then
+                        curse.Value = _origCurse
+                        _origCurse = nil
+                    end
+                end
             end
         end
     end)

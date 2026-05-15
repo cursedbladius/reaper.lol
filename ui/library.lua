@@ -4522,7 +4522,7 @@ local Library do
                 BorderColor3 = FromRGB(10, 10, 10),
                 Name = "\0",
                 Position = UDim2New(0, 0, 1, 5),
-                Size = UDim2New(1, 0, 0, 200),
+                Size = UDim2New(1, 0, 0, 0),
                 BorderSizePixel = 2,
                 AutomaticCanvasSize = Enum.AutomaticSize.Y,
                 CanvasSize = UDim2New(0, 0, 0, 0),
@@ -4621,6 +4621,13 @@ local Library do
 
         function Dropdown:SetVisibility(Bool)
             Items["Dropdown"].Instance.Visible = Bool
+        end
+
+        local function RecalcDropdownSize()
+            local count = 0
+            for _ in pairs(Dropdown.Options) do count = count + 1 end
+            local height = math.min(count * 15 + 2, 200)
+            Items["OptionHolder"].Instance.Size = UDim2New(1, 0, 0, height)
         end
 
         function Dropdown:Add(Option)
@@ -4735,12 +4742,15 @@ local Library do
             end)
 
             Dropdown.Options[Option] = OptionData
+            RecalcDropdownSize()
             return OptionData
         end
 
         function Dropdown:Remove(Option)
             if Dropdown.Options[Option] then 
                 Dropdown.Options[Option].Button:Clean()
+                Dropdown.Options[Option] = nil
+                RecalcDropdownSize()
             end
         end
 

@@ -33,16 +33,19 @@ Watermark:SetVisibility(true)
 KeybindList:SetVisibility(false)
 
 local CombatTab = Window:Page({Name = "Combat", Columns = 2, Subtabs = false})
-local VisualsTab = Window:Page({Name = "Visuals", Columns = 2, Subtabs = false})
+local VisualsTab = Window:Page({Name = "Visuals", Columns = 2, Subtabs = true})
 local MovementTab = Window:Page({Name = "Movement", Columns = 2, Subtabs = false})
 local SettingsTab = Library:CreateSettingsPage(Window, Watermark, KeybindList)
 
-local AimbotSection = CombatTab:Section({Name = "Aimbot", Side = 1})
+local CamlockSection = CombatTab:Section({Name = "Camlock", Side = 1})
 local SilentAimSection = CombatTab:Section({Name = "Silent Aim", Side = 1})
-local TargetSection = CombatTab:Section({Name = "Target", Side = 2})
-local WeaponSection = CombatTab:Section({Name = "Weapon", Side = 2})
+local TargetAimSection = CombatTab:Section({Name = "Target Aim", Side = 2})
+local WeaponModsSection = CombatTab:Section({Name = "Weapon Mods", Side = 2})
 
-local ESPSection = VisualsTab:Section({Name = "ESP", Side = 1})
+local PlayersSubTab = VisualsTab:SubPage({Icon = "115398113982385", Columns = 2})
+local GeneralSubTab = VisualsTab:SubPage({Icon = "136372617578355", Columns = 2})
+
+local ESPSection = PlayersSubTab:Section({Name = "ESP", Side = 1})
 
 ESPSection:Toggle({Name = "Masterswitch", Flag = "ESPEnabled", Default = false, Callback = function(Value)
     ESP:Toggle(Value)
@@ -115,7 +118,7 @@ end}):Colorpicker({Name = "", Flag = "ESPToolColor", Default = Color3.fromRGB(25
     ESP:SetSetting("ToolColor", Value)
 end})
 
-local OptionsSection = VisualsTab:Section({Name = "Options", Side = 2})
+local OptionsSection = PlayersSubTab:Section({Name = "Options", Side = 2})
 
 OptionsSection:Slider({Name = "Render Distance", Min = 100, Max = 5000, Default = 1000, Decimals = 1, Suffix = " studs", Flag = "ESPDistanceSlider", Callback = function(Value)
     ESP:SetSetting("MaxDistance", Value)
@@ -139,7 +142,7 @@ OptionsSection:Toggle({Name = "Team Check", Flag = "Team Check", Default = true,
     ESP:SetSetting("TeamCheck", Value)
 end})
 
-local ExtrasSection = VisualsTab:Section({Name = "Weapon Modifier", Side = 2})
+local ExtrasSection = GeneralSubTab:Section({Name = "Weapon Modifier", Side = 1})
 
 ExtrasSection:Toggle({Name = "Tool Modifier", Flag = "ToolModifier", Default = false, Callback = function(Value)
     ToolModifier.Enabled = Value
@@ -184,7 +187,7 @@ game:GetService("RunService").RenderStepped:Connect(function()
     end
 end)
 
-local ParticleSection = VisualsTab:Section({Name = "Particle Aura", Side = 2})
+local ParticleSection = GeneralSubTab:Section({Name = "Particle Aura", Side = 2})
 ParticleSection:Toggle({Name = "Particle Aura", Flag = "ParticleAura", Default = false, Callback = function(Value)
     ParticleAura:Toggle(Value)
 end}):Colorpicker({Name = "", Flag = "ParticleAuraColor", Default = Color3.fromRGB(133, 220, 255), DefaultAlpha = 0.2, Callback = function(Value, Alpha)
@@ -205,21 +208,37 @@ ParticleSection:Dropdown({
 
 if game.GameId == 111958650 or game.PlaceId == 286090429 then
     ArsenalAdapter:StartActor()
-    local GunModSection = WeaponSection
-    GunModSection:Toggle({Name = "No Recoil", Flag = "ArsenalNoRecoil", Default = false, Callback = function(Value)
-        if Value then ArsenalAdapter:NoRecoil() end
+
+    WeaponModsSection:Toggle({Name = "No Recoil", Flag = "ArsenalNoRecoil", Default = false, Callback = function(Value)
+        ArsenalAdapter:NoRecoil(Value)
     end})
-    GunModSection:Toggle({Name = "No Spread", Flag = "ArsenalNoSpread", Default = false, Callback = function(Value)
-        if Value then ArsenalAdapter:NoSpread() end
+    WeaponModsSection:Toggle({Name = "No Spread", Flag = "ArsenalNoSpread", Default = false, Callback = function(Value)
+        ArsenalAdapter:NoSpread(Value)
     end})
-    GunModSection:Toggle({Name = "Fast Reload", Flag = "ArsenalFastReload", Default = false, Callback = function(Value)
-        if Value then ArsenalAdapter:FastReload() end
+    WeaponModsSection:Toggle({Name = "Fast Reload", Flag = "ArsenalFastReload", Default = false, Callback = function(Value)
+        ArsenalAdapter:FastReload(Value)
     end})
-    GunModSection:Toggle({Name = "Fast Fire Rate", Flag = "ArsenalFireRate", Default = false, Callback = function(Value)
-        if Value then ArsenalAdapter:FastFireRate() end
+
+    local _fireRateEnabled = false
+    local _fireRateMultiplier = 2
+    local FireRateSlider
+    WeaponModsSection:Toggle({Name = "Fire Rate Modifier", Flag = "ArsenalFireRate", Default = false, Callback = function(Value)
+        _fireRateEnabled = Value
+        ArsenalAdapter:FireRateModifier(Value, _fireRateMultiplier)
+        if FireRateSlider then
+            pcall(function() FireRateSlider:SetVisibility(Value) end)
+        end
     end})
-    GunModSection:Toggle({Name = "Infinite Ammo", Flag = "ArsenalInfAmmo", Default = false, Callback = function(Value)
-        if Value then ArsenalAdapter:InfiniteAmmo() end
+    FireRateSlider = WeaponModsSection:Slider({Name = "Fire Rate Multiplier", Flag = "ArsenalFireRateMult", Default = 2, Min = 1, Max = 10, Increment = 0.5, Suffix = "x", Callback = function(Value)
+        _fireRateMultiplier = Value
+        if _fireRateEnabled then
+            ArsenalAdapter:FireRateModifier(true, Value)
+        end
+    end})
+    FireRateSlider:SetVisibility(false)
+
+    WeaponModsSection:Toggle({Name = "Infinite Ammo", Flag = "ArsenalInfAmmo", Default = false, Callback = function(Value)
+        ArsenalAdapter:InfiniteAmmo(Value)
     end})
 
     local SkinSection = VisualsTab:Section({Name = "Skin-Changer", Side = 1})
@@ -278,52 +297,6 @@ local FlySection = MovementTab:Section({Name = "Fly", Side = 1})
 local JumpSection = MovementTab:Section({Name = "Jump", Side = 2})
 local SpeedSection = MovementTab:Section({Name = "Speed", Side = 2})
 
-local MiscSection = MovementTab:Section({Name = "Camera", Side = 2})
-
-local _thirdPersonEnabled = false
-local _thirdPersonConn = nil
-local _origMinZoom = nil
-local _origMaxZoom = nil
-
-local _origCameraMode = nil
-MiscSection:Toggle({Name = "Force Third Person", Flag = "ForceThirdPerson", Default = false, Callback = function(Value)
-    _thirdPersonEnabled = Value
-    local player = game:GetService("Players").LocalPlayer
-    if Value then
-        _origMinZoom = player.CameraMinZoomDistance
-        _origMaxZoom = player.CameraMaxZoomDistance
-        _origCameraMode = player.CameraMode
-        player.CameraMode = Enum.CameraMode.Classic
-        player.CameraMinZoomDistance = 0.5
-        player.CameraMaxZoomDistance = 128
-        if not _thirdPersonConn then
-            _thirdPersonConn = game:GetService("RunService").Heartbeat:Connect(function()
-                pcall(function()
-                    if player.CameraMode ~= Enum.CameraMode.Classic then
-                        player.CameraMode = Enum.CameraMode.Classic
-                    end
-                    if player.CameraMaxZoomDistance < 2 then
-                        player.CameraMaxZoomDistance = 128
-                    end
-                    if player.CameraMinZoomDistance > 10 then
-                        player.CameraMinZoomDistance = 0.5
-                    end
-                end)
-            end)
-        end
-    else
-        if _thirdPersonConn then
-            _thirdPersonConn:Disconnect()
-            _thirdPersonConn = nil
-        end
-        pcall(function()
-            if _origCameraMode then player.CameraMode = _origCameraMode end
-            if _origMinZoom then player.CameraMinZoomDistance = _origMinZoom end
-            if _origMaxZoom then player.CameraMaxZoomDistance = _origMaxZoom end
-        end)
-    end
-end})
-
 local OriginalUnload = Library.Unload
 Library.Unload = function(self)
     if ESP then
@@ -331,16 +304,6 @@ Library.Unload = function(self)
     end
     ToolModifier:Unload()
     ParticleAura:Unload()
-    if _thirdPersonConn then
-        _thirdPersonConn:Disconnect()
-        _thirdPersonConn = nil
-    end
-    pcall(function()
-        local player = game:GetService("Players").LocalPlayer
-        if _origCameraMode then player.CameraMode = _origCameraMode end
-        if _origMinZoom then player.CameraMinZoomDistance = _origMinZoom end
-        if _origMaxZoom then player.CameraMaxZoomDistance = _origMaxZoom end
-    end)
     OriginalUnload(self)
 end
 
