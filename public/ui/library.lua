@@ -1922,31 +1922,22 @@ local Library do
                 Parent = Library.Holder.Instance,
                 Name = "\0",
                 Position = UDim2New(0, ButtonPos.X, 0, ButtonPos.Y + ButtonSize.Y + 2),
-                Size = UDim2New(0, 100, 0, 66),
-                BackgroundColor3 = FromRGB(25, 25, 25),
+                Size = UDim2New(0, 80, 0, 45),
                 BorderColor3 = FromRGB(10, 10, 10),
                 BorderSizePixel = 2,
-                ZIndex = 10002
-            })
+                ZIndex = 10002,
+                BackgroundColor3 = FromRGB(15, 15, 20)
+            })  ContextMenu:AddToTheme({BackgroundColor3 = "Background", BorderColor3 = "Border"})
             
             Instances:Create("UIStroke", {
                 Parent = ContextMenu.Instance,
                 ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
                 LineJoinMode = Enum.LineJoinMode.Miter,
                 Name = "\0",
-                Color = FromRGB(40, 40, 40),
+                Color = FromRGB(27, 27, 32),
                 ZIndex = 10002
-            })
+            }):AddToTheme({Color = "Outline"})
             
-            Instances:Create("UIPadding", {
-                Parent = ContextMenu.Instance,
-                PaddingTop = UDimNew(0, 2),
-                PaddingBottom = UDimNew(0, 2),
-                PaddingLeft = UDimNew(0, 2),
-                PaddingRight = UDimNew(0, 2)
-            })
-            
-            local MenuItems = {}
             local MenuOptions = {
                 {Name = "Copy Colour", Callback = function()
                     if setclipboard then
@@ -1988,24 +1979,26 @@ local Library do
                 local MenuButton = Instances:Create("TextButton", {
                     Parent = ContextMenu.Instance,
                     Name = "\0",
-                    Size = UDim2New(1, 0, 0, 20),
-                    Position = UDim2New(0, 0, 0, (i - 1) * 21),
-                    BackgroundColor3 = FromRGB(33, 33, 36),
+                    Size = UDim2New(1, 0, 0, 15),
+                    Position = UDim2New(0, 1, 0, (i - 1) * 15),
+                    BackgroundTransparency = 1,
                     Text = Option.Name,
                     FontFace = Library.Font,
-                    TextColor3 = FromRGB(200, 200, 200),
-                    TextSize = 11,
+                    TextColor3 = FromRGB(215, 215, 215),
+                    BorderColor3 = FromRGB(0, 0, 0),
+                    TextSize = 12,
                     AutoButtonColor = false,
+                    ZIndex = 10003,
+                    BorderSizePixel = 0,
+                    BackgroundColor3 = FromRGB(255, 255, 255)
+                })  MenuButton:AddToTheme({TextColor3 = "Text"})
+                
+                Instances:Create("UIStroke", {
+                    Parent = MenuButton.Instance,
+                    LineJoinMode = Enum.LineJoinMode.Miter,
+                    Name = "\0",
                     ZIndex = 10003
-                })
-                
-                MenuButton:OnHover(function()
-                    MenuButton:Tween(nil, {BackgroundColor3 = FromRGB(50, 50, 55)})
-                end)
-                
-                MenuButton:OnHoverLeave(function()
-                    MenuButton:Tween(nil, {BackgroundColor3 = FromRGB(33, 33, 36)})
-                end)
+                }):AddToTheme({Color = "Text Border"})
                 
                 MenuButton:Connect("MouseButton1Down", Option.Callback)
             end
