@@ -175,6 +175,20 @@ ToolMaterialDropdown = ExtrasSection:Dropdown({
     end
 })
 
+ExtrasSection:Dropdown({
+    Name = "Effect",
+    Flag = "ToolModifierEffect",
+    Default = "None",
+    Items = {"None", "Rainbow", "Gradient", "Breathing", "Rainbow Gradient"},
+    Callback = function(Value)
+        ToolModifier.Effect = Value or "None"
+    end
+})
+
+ExtrasSection:Slider({Name = "Effect Speed", Flag = "ToolEffectSpeed", Default = 1, Min = 0.1, Max = 5, Increment = 0.1, Callback = function(Value)
+    ToolModifier.EffectSpeed = Value
+end})
+
 local _toolModFrame = 0
 game:GetService("RunService").RenderStepped:Connect(function()
     _toolModFrame = _toolModFrame + 1
@@ -238,6 +252,20 @@ if game.GameId == 111958650 or game.PlaceId == 286090429 then
             end)
         end
     })
+
+    ArmSection:Dropdown({
+        Name = "Effect",
+        Flag = "ArmModifierEffect",
+        Default = "None",
+        Items = {"None", "Rainbow", "Gradient", "Breathing", "Rainbow Gradient"},
+        Callback = function(Value)
+            ToolModifier.ArmEffect = Value or "None"
+        end
+    })
+
+    ArmSection:Slider({Name = "Effect Speed", Flag = "ArmEffectSpeed", Default = 1, Min = 0.1, Max = 5, Increment = 0.1, Callback = function(Value)
+        ToolModifier.ArmEffectSpeed = Value
+    end})
 
     local SkinSection = VisualsTab:Section({Name = "Skin-Changer", Side = 1})
     SkinSection:Toggle({Name = "Unlock All Items", Flag = "ArsenalUnlockAll", Default = false, Callback = function(Value)
