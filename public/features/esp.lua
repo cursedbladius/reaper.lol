@@ -103,6 +103,9 @@ local function CreateESPObject()
         obj.GradientLines[i].Transparency = 1
     end
 
+    -- Distance text (centered below box)
+    obj.Distance = NewText({Size = 13, Center = true, Outline = true, OutlineColor = Color3.new(0, 0, 0)})
+
     -- Smoothed health value for animation
     obj.SmoothedHealth = 1
 
@@ -415,6 +418,18 @@ local function UpdateESP()
             for _, line in ipairs(obj.GradientLines) do
                 line.Visible = false
             end
+        end
+
+        -- ═══════════════════════ DISTANCE ESP ═══════════════════════
+        if ESP.Settings.Distance then
+            local meters = math.floor(distance / 3.5714 + 0.5)
+            obj.Distance.Text = "[" .. meters .. "m]"
+            obj.Distance.Position = Vector2.new(bounds.X + bounds.Width / 2, bounds.Y + bounds.Height + 2)
+            obj.Distance.Color = ESP.Settings.DistanceColor
+            obj.Distance.Font = GetFont(ESP.Settings.Font)
+            obj.Distance.Visible = true
+        else
+            obj.Distance.Visible = false
         end
     end
 end
