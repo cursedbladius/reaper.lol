@@ -198,6 +198,42 @@ if game.GameId == 111958650 or game.PlaceId == 286090429 then
         if Value then ArsenalAdapter:InfiniteAmmo() end
     end})
 
+    local ArmSection = VisualsTab:Section({Name = "Arm Modifier", Side = 2})
+    ArmSection:Toggle({Name = "Arm Modifier", Flag = "ArmModifier", Default = false, Callback = function(Value)
+        ToolModifier.ArmEnabled = Value
+        if not Value then
+            ToolModifier:ResetArms()
+        end
+    end}):Colorpicker({Name = "", Flag = "ArmModColor", Default = Color3.fromRGB(0, 255, 0), DefaultAlpha = 0.4, Callback = function(Value, Alpha)
+        ToolModifier.ArmColor = Value
+        ToolModifier.ArmAlpha = Alpha or 0
+    end})
+
+    local ArmOutlineToggle = ArmSection:Toggle({Name = "Outline", Flag = "ArmOutlineToggle", Default = true, Callback = function(Value)
+        ToolModifier.ArmOutlineEnabled = Value
+    end})
+    ArmOutlineToggle:Colorpicker({Name = "", Flag = "ArmOutlineColor", Default = Color3.fromRGB(255, 255, 255), Callback = function(Value)
+        ToolModifier.ArmOutlineColor = Value
+    end})
+
+    local ArmMaterialDropdown
+    ArmMaterialDropdown = ArmSection:Dropdown({
+        Name = "Arm Material",
+        Flag = "ArmMaterial",
+        Default = "Highlight",
+        Items = {"Highlight", "ForceField", "Neon"},
+        Callback = function(Value)
+            if Value == nil then
+                ArmMaterialDropdown:Set("Highlight")
+                return
+            end
+            ToolModifier.ArmMaterial = Value
+            pcall(function()
+                ArmOutlineToggle:SetVisiblity(Value == "Highlight")
+            end)
+        end
+    })
+
     local SkinSection = VisualsTab:Section({Name = "Skin-Changer", Side = 1})
     SkinSection:Toggle({Name = "Unlock All Items", Flag = "ArsenalUnlockAll", Default = false, Callback = function(Value)
         ArsenalAdapter:UnlockAll(Value)

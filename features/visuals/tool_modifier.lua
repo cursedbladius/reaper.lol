@@ -7,6 +7,13 @@ ToolModifier.Material = "Highlight"
 ToolModifier.OutlineColor = Color3.fromRGB(255, 255, 255)
 ToolModifier.OutlineEnabled = true
 
+ToolModifier.ArmEnabled = false
+ToolModifier.ArmColor = Color3.fromRGB(0, 255, 0)
+ToolModifier.ArmAlpha = 0.4
+ToolModifier.ArmMaterial = "Highlight"
+ToolModifier.ArmOutlineColor = Color3.fromRGB(255, 255, 255)
+ToolModifier.ArmOutlineEnabled = true
+
 local CurrentTool = nil
 local ToolHighlight = nil
 local ToolPartData = {}
@@ -14,6 +21,8 @@ local ToolPartData = {}
 local GameAdapter = nil
 local GameHighlights = {}
 local GameOriginals = {}
+local ArmHighlights = {}
+local ArmOriginals = {}
 
 function ToolModifier:Initialize(gameAdapter)
     GameAdapter = gameAdapter
@@ -276,10 +285,141 @@ local function ApplyToGameTargets(self)
     end
 end
 
+local function ApplyToArmTargets(self)
+    if not GameAdapter or not GameAdapter.GetArmTargets then return end
+
+    local localPlayer = game:GetService("Players").LocalPlayer
+    local targets = GameAdapter:GetArmTargets(localPlayer.Name)
+    if #targets == 0 then return end
+
+    local allParts = {}
+    for _, target in pairs(targets) do
+        for _, p in pairs(target:GetDescendants()) do
+            if p:IsA("BasePart") and not ArmOriginals[p] then
+                local removables = {}
+                local specialMesh = nil
+                local specialMeshTexture = nil
+                for _, child in ipairs(p:GetChildren()) do
+                    if child:IsA("SurfaceAppearance") or child:IsA("Decal") or child:IsA("Texture") then
+                        table.insert(removables, {Instance = child, Parent = p})
+                    end
+                    if child:IsA("SpecialMesh") or child:IsA("FileMesh") then
+                        specialMesh = child
+                        specialMeshTexture = child.TextureId
+                    end
+                end
+                ArmOriginals[p] = {
+                    Material = p.Material,
+                    Color = p.Color,
+                    BrickColor = p.BrickColor,
+                    TextureID = pcall(function() return p.TextureID end) and p.TextureID or nil,
+                    SpecialMesh = specialMesh,
+                    SpecialMeshTexture = specialMeshTexture,
+                    Removables = removables,
+                }
+            end
+            if p:IsA("BasePart") then
+                table.insert(allParts, p)
+            end
+        end
+    end
+
+    if self.ArmMaterial == "Highlight" then
+        for _, p in pairs(allParts) do
+            pcall(function()
+                local orig = ArmOriginals[p]
+                if orig then
+                    p.Material = orig.Material
+                    p.Color = orig.Color
+                    p.BrickColor = orig.BrickColor
+                end
+            end)
+        end
+        for _, target in pairs(targets) do
+            pcall(function()
+                if not target:FindFirstChild("_ArmModHighlight") then
+                    local hl = Instance.new("Highlight")
+                    hl.Name = "_ArmModHighlight"
+                    hl.Adornee = target
+                    hl.FillColor = self.ArmColor
+                    hl.FillTransparency = self.ArmAlpha
+                    hl.OutlineColor = self.ArmOutlineColor
+                    hl.OutlineTransparency = self.ArmOutlineEnabled and 0 or 1
+                    hl.Parent = target
+                    table.insert(ArmHighlights, hl)
+                else
+                    local hl = target:FindFirstChild("_ArmModHighlight")
+                    hl.FillColor = self.ArmColor
+                    hl.FillTransparency = self.ArmAlpha
+                    hl.OutlineColor = self.ArmOutlineColor
+                    hl.OutlineTransparency = self.ArmOutlineEnabled and 0 or 1
+                end
+            end)
+        end
+    else
+        for _, hl in pairs(ArmHighlights) do
+            pcall(function() hl:Destroy() end)
+        end
+        ArmHighlights = {}
+
+        local mat = self.ArmMaterial == "ForceField" and Enum.Material.ForceField or Enum.Material.Neon
+        for _, p in pairs(allParts) do
+            pcall(function()
+                p.Material = mat
+                if self.ArmMaterial == "ForceField" then
+                    p.BrickColor = BrickColor.new(self.ArmColor)
+                else
+                    p.Color = self.ArmColor
+                end
+                pcall(function() p.TextureID = "" end)
+            end)
+        end
+        for _, target in pairs(targets) do
+            for _, p in pairs(target:GetDescendants()) do
+                pcall(function()
+                    if p:IsA("SpecialMesh") or p:IsA("FileMesh") then
+                        p.TextureId = ""
+                    elseif p:IsA("SurfaceAppearance") or p:IsA("Decal") or p:IsA("Texture") then
+                        p.Parent = nil
+                    end
+                end)
+            end
+        end
+    end
+end
+
+function ToolModifier:ResetArms()
+    for _, hl in pairs(ArmHighlights) do
+        pcall(function() hl:Destroy() end)
+    end
+    ArmHighlights = {}
+    for part, orig in pairs(ArmOriginals) do
+        pcall(function()
+            part.Material = orig.Material
+            part.Color = orig.Color
+            part.BrickColor = orig.BrickColor
+            if orig.TextureID ~= nil then
+                pcall(function() part.TextureID = orig.TextureID end)
+            end
+            if orig.SpecialMesh and orig.SpecialMeshTexture then
+                pcall(function() orig.SpecialMesh.TextureId = orig.SpecialMeshTexture end)
+            end
+            for _, r in ipairs(orig.Removables or {}) do
+                pcall(function() if not r.Instance.Parent then r.Instance.Parent = r.Parent end end)
+            end
+        end)
+    end
+    ArmOriginals = {}
+end
+
 function ToolModifier:Apply()
-    if not self.Enabled then return end
-    ApplyToEquippedTool(self)
-    ApplyToGameTargets(self)
+    if self.Enabled then
+        ApplyToEquippedTool(self)
+        ApplyToGameTargets(self)
+    end
+    if self.ArmEnabled then
+        ApplyToArmTargets(self)
+    end
 end
 
 return ToolModifier
