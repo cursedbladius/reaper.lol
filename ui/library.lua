@@ -838,6 +838,17 @@ local Library do
         end
     end
 
+    Library.IsInsideHiddenScroller = function(self, Item)
+        local parent = Item.Parent
+        while parent do
+            if parent:IsA("ScrollingFrame") and parent.Visible == false then
+                return true
+            end
+            parent = parent.Parent
+        end
+        return false
+    end
+
     Library.FadeItem = function(self, Item, Property, Visibility, Speed)
         local OldTransparency = Item[Property]
         Item[Property] = Visibility and 1 or OldTransparency
@@ -2831,6 +2842,10 @@ local Library do
                     continue
                 end
 
+                if Library:IsInsideHiddenScroller(Value) then
+                    continue
+                end
+
                 if type(ValueIndex) == "table" then
                     for _, Property in pairs(ValueIndex) do 
                         NewTween = Library:FadeItem(Value, Property, Bool, Window.FadeSpeed)
@@ -3089,6 +3104,10 @@ local Library do
                     continue
                 end
 
+                if Library:IsInsideHiddenScroller(Value) then
+                    continue
+                end
+
                 if type(ValueIndex) == "table" then
                     for _, Property in pairs(ValueIndex) do 
                         NewTween = Library:FadeItem(Value, Property, Bool, Page.Window.FadeSpeed or 0.5)
@@ -3318,6 +3337,10 @@ local Library do
                 local ValueIndex = Library:GetTransparencyPropertyFromItem(Value)
 
                 if not ValueIndex then 
+                    continue
+                end
+
+                if Library:IsInsideHiddenScroller(Value) then
                     continue
                 end
 
