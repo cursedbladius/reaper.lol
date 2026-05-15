@@ -33,6 +33,15 @@ function ToolModifier:Reset()
             part.Material = orig.Material
             part.Color = orig.Color
             part.BrickColor = orig.BrickColor
+            if orig.TextureID ~= nil then
+                pcall(function() part.TextureID = orig.TextureID end)
+            end
+            if orig.SpecialMesh and orig.SpecialMeshTexture then
+                pcall(function() orig.SpecialMesh.TextureId = orig.SpecialMeshTexture end)
+            end
+            for _, r in ipairs(orig.Removables or {}) do
+                pcall(function() if not r.Instance.Parent then r.Instance.Parent = r.Parent end end)
+            end
         end)
     end
     GameOriginals = {}
@@ -172,15 +181,31 @@ local function ApplyToGameTargets(self)
     local allParts = {}
     for _, target in pairs(targets) do
         for _, p in pairs(target:GetDescendants()) do
+            if p:IsA("BasePart") and not GameOriginals[p] then
+                local removables = {}
+                local specialMesh = nil
+                local specialMeshTexture = nil
+                for _, child in ipairs(p:GetChildren()) do
+                    if child:IsA("SurfaceAppearance") or child:IsA("Decal") or child:IsA("Texture") then
+                        table.insert(removables, {Instance = child, Parent = p})
+                    end
+                    if child:IsA("SpecialMesh") or child:IsA("FileMesh") then
+                        specialMesh = child
+                        specialMeshTexture = child.TextureId
+                    end
+                end
+                GameOriginals[p] = {
+                    Material = p.Material,
+                    Color = p.Color,
+                    BrickColor = p.BrickColor,
+                    TextureID = pcall(function() return p.TextureID end) and p.TextureID or nil,
+                    SpecialMesh = specialMesh,
+                    SpecialMeshTexture = specialMeshTexture,
+                    Removables = removables,
+                }
+            end
             if p:IsA("BasePart") then
                 table.insert(allParts, p)
-                if not GameOriginals[p] then
-                    GameOriginals[p] = {
-                        Material = p.Material,
-                        Color = p.Color,
-                        BrickColor = p.BrickColor,
-                    }
-                end
             end
         end
     end
