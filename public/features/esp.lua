@@ -1,387 +1,289 @@
-local ESP = {
-    Enabled = false,
-    Connections = {},
-    Cache = {},
-    Settings = {
-        -- Toggles
-        Box = true,
-        Name = true,
-        HealthBar = true,
-        Distance = false,
-        Skeleton = false,
-        Chams = false,
-        Tool = false,
-        -- Colors
-        BoxColor = Color3.fromRGB(255, 255, 255),
-        NameColor = Color3.fromRGB(255, 255, 255),
-        HealthColor = Color3.fromRGB(0, 255, 0),
-        DistanceColor = Color3.fromRGB(255, 255, 255),
-        SkeletonColor = Color3.fromRGB(255, 255, 255),
-        ChamsColor = Color3.fromRGB(255, 0, 0),
-        ToolColor = Color3.fromRGB(255, 255, 255),
-        -- Options
-        MaxDistance = 1000,
-        BoxType = "Dynamic",
-        Font = "Default (Tahoma)",
-        VisibleOnly = false,
-        TeamCheck = true,
-        TextSize = 13
-    }
-}
+local ESP = {}
+ESP.__index = ESP
 
+-- Services
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local CoreGui = game:GetService("CoreGui")
-local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
--- Utility Functions
-local function WorldToScreen(Position)
-    local ScreenPos, OnScreen = Camera:WorldToViewportPoint(Position)
-    return Vector2.new(ScreenPos.X, ScreenPos.Y), OnScreen, ScreenPos.Z
+-- Local Player
+local LocalPlayer = Players.LocalPlayer
+
+-- Settings
+ESP.Settings = {
+    Enabled = false,
+    Box = true,
+    BoxColor = Color3.fromRGB(255, 255, 255),
+    BoxType = "Dynamic",
+    Name = true,
+    NameColor = Color3.fromRGB(255, 255, 255),
+    HealthBar = true,
+    HealthColor = Color3.fromRGB(0, 255, 0),
+    Distance = false,
+    DistanceColor = Color3.fromRGB(255, 255, 255),
+    Skeleton = false,
+    SkeletonColor = Color3.fromRGB(255, 255, 255),
+    Chams = false,
+    ChamsColor = Color3.fromRGB(255, 0, 0),
+    Tool = false,
+    ToolColor = Color3.fromRGB(255, 255, 255),
+    MaxDistance = 1000,
+    Font = "Default (Tahoma)",
+    VisibleOnly = false,
+    TeamCheck = true,
+}
+
+-- Cache of ESP objects per player
+ESP.Objects = {}
+ESP.Connection = nil
+
+-- Drawing utility
+local function NewSquare(properties)
+    local square = Drawing.new("Square")
+    square.Visible = false
+    square.Thickness = properties.Thickness or 1
+    square.Color = properties.Color or Color3.new(1, 1, 1)
+    square.Transparency = properties.Transparency or 1
+    square.Filled = properties.Filled or false
+    return square
 end
 
-local function GetCharacter(Player)
-    return Player.Character
+-- Create ESP drawings for a player
+local function CreateESPObject()
+    local obj = {}
+
+    -- Box outline (black, thickness 3 to create a 1px border around the 1px main box)
+    obj.BoxOutline = NewSquare({Thickness = 3, Color = Color3.new(0, 0, 0)})
+
+    -- Box main (1px crisp line)
+    obj.Box = NewSquare({Thickness = 1, Color = Color3.new(1, 1, 1)})
+
+    return obj
 end
 
-local function GetHumanoid(Character)
-    return Character:FindFirstChildOfClass("Humanoid")
+-- Destroy ESP drawings for a player
+local function DestroyESPObject(obj)
+    if not obj then return end
+    for _, drawing in pairs(obj) do
+        pcall(function() drawing:Remove() end)
+    end
 end
 
-local function IsEnemy(Player)
-    if not ESP.Settings.TeamCheck then return true end
-    if not LocalPlayer.Team then return true end
-    return Player.Team ~= LocalPlayer.Team
+-- Hide all drawings in an ESP object
+local function HideESPObject(obj)
+    if not obj then return end
+    for _, drawing in pairs(obj) do
+        pcall(function() drawing.Visible = false end)
+    end
 end
 
--- Initialize ESP for Player
-function ESP:InitPlayer(Player)
-    if self.Cache[Player] then return end
-    
-    self.Cache[Player] = {
-        Box = Drawing.new("Square"),
-        BoxOutline = Drawing.new("Square"),
-        Name = Drawing.new("Text"),
-        HealthBar = Drawing.new("Square"),
-        HealthBarOutline = Drawing.new("Square"),
-        Distance = Drawing.new("Text"),
-        Tool = Drawing.new("Text"),
-        Skeleton = {},
-        Chams = nil
+-- Get bounding box from character limbs (dynamic sizing)
+-- Projects all part corners to screen space for accurate sizing
+local function GetDynamicBoundingBox(character)
+    local minX, minY = math.huge, math.huge
+    local maxX, maxY = -math.huge, -math.huge
+    local onScreen = false
+
+    for _, part in ipairs(character:GetChildren()) do
+        if part:IsA("BasePart") then
+            local cf = part.CFrame
+            local size = part.Size
+            local sx, sy, sz = size.X / 2, size.Y / 2, size.Z / 2
+
+            -- 8 corners of each limb/part bounding box
+            local corners = {
+                cf * Vector3.new(sx, sy, sz),
+                cf * Vector3.new(sx, sy, -sz),
+                cf * Vector3.new(sx, -sy, sz),
+                cf * Vector3.new(sx, -sy, -sz),
+                cf * Vector3.new(-sx, sy, sz),
+                cf * Vector3.new(-sx, sy, -sz),
+                cf * Vector3.new(-sx, -sy, sz),
+                cf * Vector3.new(-sx, -sy, -sz),
+            }
+
+            for _, corner in ipairs(corners) do
+                local screenPos, visible = Camera:WorldToViewportPoint(corner)
+                if visible then
+                    onScreen = true
+                    if screenPos.X < minX then minX = screenPos.X end
+                    if screenPos.Y < minY then minY = screenPos.Y end
+                    if screenPos.X > maxX then maxX = screenPos.X end
+                    if screenPos.Y > maxY then maxY = screenPos.Y end
+                end
+            end
+        end
+    end
+
+    if not onScreen or minX == math.huge then
+        return nil
+    end
+
+    return {
+        X = math.floor(minX),
+        Y = math.floor(minY),
+        Width = math.floor(maxX - minX),
+        Height = math.floor(maxY - minY)
     }
-    
-    local cache = self.Cache[Player]
-    
-    -- Setup drawing objects
-    cache.Box.Thickness = 1
-    cache.Box.Filled = false
-    cache.Box.ZIndex = 2
-    
-    cache.BoxOutline.Thickness = 3
-    cache.BoxOutline.Filled = false
-    cache.BoxOutline.Color = Color3.fromRGB(0, 0, 0)
-    cache.BoxOutline.ZIndex = 1
-    
-    cache.Name.Size = self.Settings.TextSize
-    cache.Name.Center = true
-    cache.Name.Outline = true
-    cache.Name.ZIndex = 3
-    
-    cache.HealthBar.Filled = true
-    cache.HealthBar.ZIndex = 2
-    
-    cache.HealthBarOutline.Filled = false
-    cache.HealthBarOutline.Thickness = 1
-    cache.HealthBarOutline.Color = Color3.fromRGB(0, 0, 0)
-    cache.HealthBarOutline.ZIndex = 1
-    
-    cache.Distance.Size = self.Settings.TextSize
-    cache.Distance.Center = true
-    cache.Distance.Outline = true
-    cache.Distance.ZIndex = 3
-    
-    cache.Tool.Size = self.Settings.TextSize
-    cache.Tool.Center = true
-    cache.Tool.Outline = true
-    cache.Tool.ZIndex = 3
-    
-    -- Skeleton lines
-    for i = 1, 10 do
-        cache.Skeleton[i] = Drawing.new("Line")
-        cache.Skeleton[i].Thickness = 1
-        cache.Skeleton[i].ZIndex = 2
+end
+
+-- Get static bounding box (proportional from root, head-to-foot ratio)
+local function GetStaticBoundingBox(character)
+    local hrp = character:FindFirstChild("HumanoidRootPart")
+    local head = character:FindFirstChild("Head")
+    if not hrp or not head then return nil end
+
+    local topPos = head.Position + Vector3.new(0, head.Size.Y / 2 + 0.5, 0)
+    local bottomPos = hrp.Position - Vector3.new(0, 3, 0)
+
+    local screenTop, visibleTop = Camera:WorldToViewportPoint(topPos)
+    local screenBottom, visibleBottom = Camera:WorldToViewportPoint(bottomPos)
+
+    if not visibleTop or not visibleBottom then return nil end
+
+    local height = math.abs(screenBottom.Y - screenTop.Y)
+    local width = height * 0.55
+
+    local centerX = (screenTop.X + screenBottom.X) / 2
+
+    return {
+        X = math.floor(centerX - width / 2),
+        Y = math.floor(screenTop.Y),
+        Width = math.floor(width),
+        Height = math.floor(height)
+    }
+end
+
+-- Get bounding box based on current type setting
+local function GetBoundingBox(character)
+    if ESP.Settings.BoxType == "Dynamic" then
+        return GetDynamicBoundingBox(character)
+    else
+        return GetStaticBoundingBox(character)
     end
 end
 
--- Clear ESP for Player
-function ESP:ClearPlayer(Player)
-    local cache = self.Cache[Player]
-    if not cache then return end
-    
-    cache.Box.Visible = false
-    cache.BoxOutline.Visible = false
-    cache.Name.Visible = false
-    cache.HealthBar.Visible = false
-    cache.HealthBarOutline.Visible = false
-    cache.Distance.Visible = false
-    cache.Tool.Visible = false
-    
-    for _, line in ipairs(cache.Skeleton) do
-        line.Visible = false
-    end
-    
-    if cache.Chams then
-        cache.Chams:Destroy()
-        cache.Chams = nil
-    end
+-- Team check
+local function IsEnemy(player)
+    if not ESP.Settings.TeamCheck then return true end
+    if player.Team == nil or LocalPlayer.Team == nil then return true end
+    return player.Team ~= LocalPlayer.Team
 end
 
--- Remove ESP for Player
-function ESP:RemovePlayer(Player)
-    self:ClearPlayer(Player)
-    local cache = self.Cache[Player]
-    if cache then
-        cache.Box:Remove()
-        cache.BoxOutline:Remove()
-        cache.Name:Remove()
-        cache.HealthBar:Remove()
-        cache.HealthBarOutline:Remove()
-        cache.Distance:Remove()
-        cache.Tool:Remove()
-        for _, line in ipairs(cache.Skeleton) do
-            line:Remove()
-        end
-        if cache.Chams then
-            cache.Chams:Destroy()
-        end
-    end
-    self.Cache[Player] = nil
-end
+-- Main update loop
+local function UpdateESP()
+    Camera = workspace.CurrentCamera
 
--- Update Player ESP
-function ESP:UpdatePlayer(Player)
-    if not self.Enabled then
-        self:ClearPlayer(Player)
-        return
-    end
-    
-    if not self.Cache[Player] then
-        self:InitPlayer(Player)
-    end
-    
-    local cache = self.Cache[Player]
-    local Character = GetCharacter(Player)
-    
-    if not Character then
-        self:ClearPlayer(Player)
-        return
-    end
-    
-    local Humanoid = GetHumanoid(Character)
-    if not Humanoid then
-        self:ClearPlayer(Player)
-        return
-    end
-    
-    local RootPart = Character:FindFirstChild("HumanoidRootPart")
-    if not RootPart then
-        self:ClearPlayer(Player)
-        return
-    end
-    
-    local Position, OnScreen, Distance = WorldToScreen(RootPart.Position)
-    
-    if not OnScreen or Distance > self.Settings.MaxDistance then
-        self:ClearPlayer(Player)
-        return
-    end
-    
-    if not IsEnemy(Player) then
-        self:ClearPlayer(Player)
-        return
-    end
-    
-    -- Calculate box size based on character
-    local head = Character:FindFirstChild("Head")
-    local torso = Character:FindFirstChild("UpperTorso") or Character:FindFirstChild("Torso")
-    
-    if not head or not torso then
-        self:ClearPlayer(Player)
-        return
-    end
-    
-    local headPos = WorldToScreen(head.Position)
-    local torsoPos = WorldToScreen(torso.Position)
-    local legPos = WorldToScreen(torso.Position - Vector3.new(0, 3, 0))
-    
-    if not headPos or not legPos then
-        self:ClearPlayer(Player)
-        return
-    end
-    
-    local boxHeight = math.abs(legPos.Y - headPos.Y)
-    local boxWidth = boxHeight * 0.5
-    
-    local boxX = Position.X - boxWidth / 2
-    local boxY = headPos.Y
-    
-    -- Box ESP
-    if self.Settings.Box then
-        cache.Box.Visible = true
-        cache.Box.Position = Vector2.new(boxX, boxY)
-        cache.Box.Size = Vector2.new(boxWidth, boxHeight)
-        cache.Box.Color = self.Settings.BoxColor
-        
-        cache.BoxOutline.Visible = true
-        cache.BoxOutline.Position = Vector2.new(boxX, boxY)
-        cache.BoxOutline.Size = Vector2.new(boxWidth, boxHeight)
-    else
-        cache.Box.Visible = false
-        cache.BoxOutline.Visible = false
-    end
-    
-    -- Name ESP
-    if self.Settings.Name then
-        cache.Name.Visible = true
-        cache.Name.Text = Player.Name
-        cache.Name.Position = Vector2.new(Position.X, boxY - 18)
-        cache.Name.Color = self.Settings.NameColor
-    else
-        cache.Name.Visible = false
-    end
-    
-    -- Health Bar
-    if self.Settings.HealthBar then
-        local health = Humanoid.Health
-        local maxHealth = Humanoid.MaxHealth
-        local healthPercent = math.clamp(health / maxHealth, 0, 1)
-        
-        local barWidth = 4
-        local barHeight = boxHeight
-        local barX = boxX - barWidth - 4
-        
-        cache.HealthBarOutline.Visible = true
-        cache.HealthBarOutline.Position = Vector2.new(barX - 1, boxY - 1)
-        cache.HealthBarOutline.Size = Vector2.new(barWidth + 2, barHeight + 2)
-        
-        cache.HealthBar.Visible = true
-        cache.HealthBar.Position = Vector2.new(barX, boxY + (barHeight * (1 - healthPercent)))
-        cache.HealthBar.Size = Vector2.new(barWidth, barHeight * healthPercent)
-        cache.HealthBar.Color = self.Settings.HealthColor
-    else
-        cache.HealthBar.Visible = false
-        cache.HealthBarOutline.Visible = false
-    end
-    
-    -- Distance ESP
-    if self.Settings.Distance then
-        local meters = math.floor(Distance * 0.28)
-        cache.Distance.Visible = true
-        cache.Distance.Text = string.format("[%dm]", meters)
-        cache.Distance.Position = Vector2.new(Position.X, boxY + boxHeight + 2)
-        cache.Distance.Color = self.Settings.DistanceColor
-    else
-        cache.Distance.Visible = false
-    end
-    
-    -- Tool ESP
-    if self.Settings.Tool then
-        local tool = Character:FindFirstChildOfClass("Tool")
-        cache.Tool.Visible = true
-        cache.Tool.Text = tool and tool.Name or "None"
-        cache.Tool.Position = Vector2.new(Position.X, boxY + boxHeight + 15)
-        cache.Tool.Color = self.Settings.ToolColor
-    else
-        cache.Tool.Visible = false
-    end
-    
-    -- Skeleton ESP (placeholder)
-    if self.Settings.Skeleton then
-        for _, line in ipairs(cache.Skeleton) do
-            line.Visible = false
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player == LocalPlayer then continue end
+
+        -- Create object cache if missing
+        if not ESP.Objects[player] then
+            ESP.Objects[player] = CreateESPObject()
         end
-    else
-        for _, line in ipairs(cache.Skeleton) do
-            line.Visible = false
+
+        local obj = ESP.Objects[player]
+        local character = player.Character
+        local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+        local hrp = character and character:FindFirstChild("HumanoidRootPart")
+
+        -- Hide if conditions not met
+        if not ESP.Settings.Enabled or not character or not humanoid or not hrp or humanoid.Health <= 0 then
+            HideESPObject(obj)
+            continue
         end
-    end
-    
-    -- Chams ESP (placeholder)
-    if self.Settings.Chams then
-        -- Placeholder for chams implementation
-    else
-        if cache.Chams then
-            cache.Chams:Destroy()
-            cache.Chams = nil
+
+        -- Distance check
+        local distance = (Camera.CFrame.Position - hrp.Position).Magnitude
+        if distance > ESP.Settings.MaxDistance then
+            HideESPObject(obj)
+            continue
+        end
+
+        -- Team check
+        if not IsEnemy(player) then
+            HideESPObject(obj)
+            continue
+        end
+
+        -- Compute bounding box
+        local bounds = GetBoundingBox(character)
+        if not bounds or bounds.Width < 2 or bounds.Height < 2 then
+            HideESPObject(obj)
+            continue
+        end
+
+        -- ═══════════════════════ BOX ESP ═══════════════════════
+        if ESP.Settings.Box then
+            local pos = Vector2.new(bounds.X, bounds.Y)
+            local size = Vector2.new(bounds.Width, bounds.Height)
+
+            -- Outline (black, thickness 3 → creates 1px border around the 1px inner box)
+            obj.BoxOutline.Position = pos
+            obj.BoxOutline.Size = size
+            obj.BoxOutline.Color = Color3.new(0, 0, 0)
+            obj.BoxOutline.Transparency = 0.65
+            obj.BoxOutline.Thickness = 3
+            obj.BoxOutline.Visible = true
+
+            -- Main box
+            obj.Box.Position = pos
+            obj.Box.Size = size
+            obj.Box.Color = ESP.Settings.BoxColor
+            obj.Box.Transparency = 1
+            obj.Box.Thickness = 1
+            obj.Box.Visible = true
+        else
+            obj.BoxOutline.Visible = false
+            obj.Box.Visible = false
         end
     end
 end
 
--- Main Update Loop
-function ESP:Update()
-    if not self.Enabled then
-        for Player, _ in pairs(self.Cache) do
-            self:ClearPlayer(Player)
-        end
-        return
-    end
-    
-    for _, Player in ipairs(Players:GetPlayers()) do
-        if Player ~= LocalPlayer then
-            self:UpdatePlayer(Player)
-        end
-    end
-end
-
--- Control Functions
-function ESP:Toggle(State)
-    self.Enabled = State
-    if not State then
-        for Player, _ in pairs(self.Cache) do
-            self:ClearPlayer(Player)
-        end
-    end
-end
-
-function ESP:SetSetting(Name, Value)
-    if self.Settings[Name] ~= nil then
-        self.Settings[Name] = Value
-    end
-end
+-- ════════════════════════ PUBLIC API ════════════════════════
 
 function ESP:Initialize()
-    for _, Player in ipairs(Players:GetPlayers()) do
-        if Player ~= LocalPlayer then
-            self:InitPlayer(Player)
+    for _, obj in pairs(self.Objects) do
+        DestroyESPObject(obj)
+    end
+    self.Objects = {}
+
+    Players.PlayerRemoving:Connect(function(player)
+        if self.Objects[player] then
+            DestroyESPObject(self.Objects[player])
+            self.Objects[player] = nil
+        end
+    end)
+end
+
+function ESP:Toggle(value)
+    self.Settings.Enabled = value
+    if not value then
+        for _, obj in pairs(self.Objects) do
+            HideESPObject(obj)
         end
     end
-    
-    table.insert(self.Connections, Players.PlayerAdded:Connect(function(Player)
-        if Player ~= LocalPlayer then
-            ESP:InitPlayer(Player)
-        end
-    end))
-    
-    table.insert(self.Connections, Players.PlayerRemoving:Connect(function(Player)
-        ESP:RemovePlayer(Player)
-    end))
-    
-    table.insert(self.Connections, RunService.Heartbeat:Connect(function()
-        ESP:Update()
-    end))
+end
+
+function ESP:SetSetting(key, value)
+    if self.Settings[key] ~= nil then
+        self.Settings[key] = value
+    end
 end
 
 function ESP:Unload()
-    for _, Connection in ipairs(self.Connections) do
-        Connection:Disconnect()
+    if self.Connection then
+        self.Connection:Disconnect()
+        self.Connection = nil
     end
-    self.Connections = {}
-    
-    for Player, _ in pairs(self.Cache) do
-        self:RemovePlayer(Player)
+
+    for _, obj in pairs(self.Objects) do
+        DestroyESPObject(obj)
     end
-    self.Cache = {}
+    self.Objects = {}
 end
+
+-- Start render loop
+ESP.Connection = RunService.RenderStepped:Connect(UpdateESP)
 
 return ESP
