@@ -180,6 +180,7 @@ game:GetService("RunService").RenderStepped:Connect(function()
 end)
 
 if game.GameId == 111958650 or game.PlaceId == 286090429 then
+    ArsenalAdapter:StartActor()
     local GunModSection = WeaponSection
     GunModSection:Toggle({Name = "No Recoil", Flag = "ArsenalNoRecoil", Default = false, Callback = function(Value)
         if Value then ArsenalAdapter:NoRecoil() end
