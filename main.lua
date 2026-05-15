@@ -181,12 +181,11 @@ game:GetService("RunService").RenderStepped:Connect(function()
 end)
 
 if game.GameId == 111958650 or game.PlaceId == 286090429 then
-    local SkinSection = VisualsTab:ScrollableSection({Name = "Skin-Changer", Side = 2, Size = 200})
-    SkinSection:Dropdown({
-        Name = "Melee Skin",
+    local SkinSection = VisualsTab:Section({Name = "Skin-Changer", Side = 1})
+    SkinSection:Listbox({
         Flag = "ArsenalMeleeSkin",
-        Default = nil,
         Items = ArsenalAdapter.MeleeSkins,
+        Size = 200,
         Callback = function(Value)
             if Value == nil then return end
             ArsenalAdapter:SetMeleeSkin(Value)
