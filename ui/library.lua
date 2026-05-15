@@ -4522,23 +4522,18 @@ local Library do
                 BorderColor3 = FromRGB(10, 10, 10),
                 Name = "\0",
                 Position = UDim2New(0, 0, 1, 5),
-                Size = UDim2New(1, 0, 0, 0),
+                Size = UDim2New(1, 0, 0, 200),
                 BorderSizePixel = 2,
                 AutomaticCanvasSize = Enum.AutomaticSize.Y,
-                AutomaticSize = Enum.AutomaticSize.Y,
                 CanvasSize = UDim2New(0, 0, 0, 0),
                 ScrollBarThickness = 3,
                 ScrollBarImageColor3 = FromRGB(235, 157, 255),
                 MidImage = Library:GetImage("Scrollbar"),
                 TopImage = Library:GetImage("Scrollbar"),
                 BottomImage = Library:GetImage("Scrollbar"),
+                ClipsDescendants = true,
                 BackgroundColor3 = FromRGB(20, 20, 25)
             })  Items["OptionHolder"]:AddToTheme({BackgroundColor3 = "Inline", BorderColor3 = "Border", ScrollBarImageColor3 = "Accent"})
-
-            Instances:Create("UISizeConstraint", {
-                Parent = Items["OptionHolder"].Instance,
-                MaxSize = Vector2.new(math.huge, 200)
-            })
             
             Instances:Create("UIStroke", {
                 Parent = Items["OptionHolder"].Instance,

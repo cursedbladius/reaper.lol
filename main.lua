@@ -206,7 +206,7 @@ if game.GameId == 111958650 or game.PlaceId == 286090429 then
         Name = "Melee Skin",
         Flag = "ArsenalMeleeSkin",
         Default = nil,
-        Items = ArsenalAdapter.MeleeSkins,
+        Items = ArsenalAdapter:GetItemNames("Melees"),
         Callback = function(Value)
             if Value == nil then return end
             ArsenalAdapter:SetMeleeSkin(Value)
@@ -216,7 +216,7 @@ if game.GameId == 111958650 or game.PlaceId == 286090429 then
         Name = "Gun Skin",
         Flag = "ArsenalGunSkin",
         Default = nil,
-        Items = ArsenalAdapter:GetItemNames("Skins"),
+        Items = ArsenalAdapter:GetItemNames("WeaponSkins"),
         Callback = function(Value)
             if Value == nil then return end
             ArsenalAdapter:SetGunSkin(Value)
@@ -246,7 +246,7 @@ if game.GameId == 111958650 or game.PlaceId == 286090429 then
         Name = "Character Skin",
         Flag = "ArsenalCharSkin",
         Default = nil,
-        Items = ArsenalAdapter:GetItemNames("Characters"),
+        Items = ArsenalAdapter:GetItemNames("Skins"),
         Callback = function(Value)
             if Value == nil then return end
             ArsenalAdapter:SetCharacterSkin(Value)
