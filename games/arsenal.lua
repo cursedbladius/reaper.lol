@@ -93,43 +93,53 @@ function Arsenal:UnlockAll()
     for _, child in pairs(repStorage:GetChildren()) do
         if child.Name == "ItemData" then itemData = child break end
     end
-    if not itemData then return end
+    if not itemData then warn("[Arsenal] ItemData not found") return end
     local images = nil
     for _, child in pairs(itemData:GetChildren()) do
         if child.Name == "Images" then images = child break end
     end
-    if not images then return end
+    if not images then warn("[Arsenal] Images not found") return end
 
     local inventoryData = nil
-    if typeof(getgc) == "function" then
-        for _, v in pairs(getgc(true)) do
-            if typeof(v) == "table" and rawget(v, "Loadout") and typeof(rawget(v, "Items")) == "table" then
-                inventoryData = v.Items
-                break
-            end
+    for _, v in next, getgc(true) do
+        if typeof(v) == "table" and rawget(v, "Loadout") and typeof(rawget(v, "Items")) == "table" then
+            inventoryData = rawget(v, "Items")
+            break
         end
     end
     if not inventoryData then
-        warn("[Arsenal] Could not find inventory data via getgc")
+        warn("[Arsenal] Could not find inventory table via getgc")
         return
     end
 
-    for _, category in pairs(images:GetChildren()) do
-        if not inventoryData[category.Name] then
-            inventoryData[category.Name] = {}
-        end
-        for _, item in pairs(category:GetChildren()) do
-            if not inventoryData[category.Name][item.Name] then
-                inventoryData[category.Name][item.Name] = 1
+    local count = 0
+    for _, category in next, images:GetChildren() do
+        if inventoryData[category.Name] then
+            for _, item in next, category:GetChildren() do
+                if not inventoryData[category.Name][item.Name] then
+                    inventoryData[category.Name][item.Name] = 1
+                    count = count + 1
+                end
             end
         end
     end
-    warn("[Arsenal] Unlocked all items")
+    warn("[Arsenal] Unlocked", count, "items")
 end
 
 function Arsenal:SetMeleeSkin(skinName)
     pcall(function()
         game:GetService("Players").LocalPlayer.Data.Melee.Value = skinName
+    end)
+    pcall(function()
+        for _, v in next, getgc(true) do
+            if typeof(v) == "table" and rawget(v, "Loadout") then
+                local loadout = rawget(v, "Loadout")
+                if typeof(loadout) == "table" then
+                    loadout.Melee = skinName
+                end
+                break
+            end
+        end
     end)
 end
 
@@ -137,11 +147,33 @@ function Arsenal:SetGunSkin(skinName)
     pcall(function()
         game:GetService("Players").LocalPlayer.Equipped.Value = skinName
     end)
+    pcall(function()
+        for _, v in next, getgc(true) do
+            if typeof(v) == "table" and rawget(v, "Loadout") then
+                local loadout = rawget(v, "Loadout")
+                if typeof(loadout) == "table" then
+                    loadout.WeaponSkins = skinName
+                end
+                break
+            end
+        end
+    end)
 end
 
 function Arsenal:SetKillEffect(effectName)
     pcall(function()
         game:GetService("Players").LocalPlayer.Data.KillEffect.Value = effectName
+    end)
+    pcall(function()
+        for _, v in next, getgc(true) do
+            if typeof(v) == "table" and rawget(v, "Loadout") then
+                local loadout = rawget(v, "Loadout")
+                if typeof(loadout) == "table" then
+                    loadout.KillEffect = effectName
+                end
+                break
+            end
+        end
     end)
 end
 
@@ -149,11 +181,33 @@ function Arsenal:SetAnnouncer(announcerName)
     pcall(function()
         game:GetService("Players").LocalPlayer.Data.Announcer.Value = announcerName
     end)
+    pcall(function()
+        for _, v in next, getgc(true) do
+            if typeof(v) == "table" and rawget(v, "Loadout") then
+                local loadout = rawget(v, "Loadout")
+                if typeof(loadout) == "table" then
+                    loadout.Announcer = announcerName
+                end
+                break
+            end
+        end
+    end)
 end
 
 function Arsenal:SetCharacterSkin(skinName)
     pcall(function()
         game:GetService("Players").LocalPlayer.Data.Skin.Value = skinName
+    end)
+    pcall(function()
+        for _, v in next, getgc(true) do
+            if typeof(v) == "table" and rawget(v, "Loadout") then
+                local loadout = rawget(v, "Loadout")
+                if typeof(loadout) == "table" then
+                    loadout.Skin = skinName
+                end
+                break
+            end
+        end
     end)
 end
 
