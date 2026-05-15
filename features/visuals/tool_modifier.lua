@@ -233,29 +233,28 @@ local function ApplyToGameTargets(self)
                     p.BrickColor = orig.BrickColor
                 end
             end)
-        end
-        for _, target in pairs(targets) do
-            for _, child in pairs(target:GetChildren()) do
-                pcall(function()
-                    if not child:FindFirstChild("_ToolModHighlight") then
-                        local hl = Instance.new("Highlight")
-                        hl.Name = "_ToolModHighlight"
-                        hl.Adornee = child
-                        hl.FillColor = self.Color
-                        hl.FillTransparency = self.Alpha
-                        hl.OutlineColor = self.OutlineColor
-                        hl.OutlineTransparency = self.OutlineEnabled and 0 or 1
-                        hl.Parent = child
-                        table.insert(GameHighlights, hl)
-                    else
-                        local hl = child:FindFirstChild("_ToolModHighlight")
-                        hl.FillColor = self.Color
-                        hl.FillTransparency = self.Alpha
-                        hl.OutlineColor = self.OutlineColor
-                        hl.OutlineTransparency = self.OutlineEnabled and 0 or 1
-                    end
-                end)
-            end
+            pcall(function()
+                local existing = nil
+                for _, c in pairs(p:GetChildren()) do
+                    if c.Name == "_ToolModHighlight" then existing = c break end
+                end
+                if not existing then
+                    local hl = Instance.new("Highlight")
+                    hl.Name = "_ToolModHighlight"
+                    hl.Adornee = p
+                    hl.FillColor = self.Color
+                    hl.FillTransparency = self.Alpha
+                    hl.OutlineColor = self.OutlineColor
+                    hl.OutlineTransparency = self.OutlineEnabled and 0 or 1
+                    hl.Parent = p
+                    table.insert(GameHighlights, hl)
+                else
+                    existing.FillColor = self.Color
+                    existing.FillTransparency = self.Alpha
+                    existing.OutlineColor = self.OutlineColor
+                    existing.OutlineTransparency = self.OutlineEnabled and 0 or 1
+                end
+            end)
         end
     else
         for _, hl in pairs(GameHighlights) do
@@ -342,25 +341,26 @@ local function ApplyToArmTargets(self)
                     p.BrickColor = orig.BrickColor
                 end
             end)
-        end
-        for _, target in pairs(targets) do
             pcall(function()
-                if not target:FindFirstChild("_ArmModHighlight") then
+                local existing = nil
+                for _, c in pairs(p:GetChildren()) do
+                    if c.Name == "_ArmModHighlight" then existing = c break end
+                end
+                if not existing then
                     local hl = Instance.new("Highlight")
                     hl.Name = "_ArmModHighlight"
-                    hl.Adornee = target
+                    hl.Adornee = p
                     hl.FillColor = self.ArmColor
                     hl.FillTransparency = self.ArmAlpha
                     hl.OutlineColor = self.ArmOutlineColor
                     hl.OutlineTransparency = self.ArmOutlineEnabled and 0 or 1
-                    hl.Parent = target
+                    hl.Parent = p
                     table.insert(ArmHighlights, hl)
                 else
-                    local hl = target:FindFirstChild("_ArmModHighlight")
-                    hl.FillColor = self.ArmColor
-                    hl.FillTransparency = self.ArmAlpha
-                    hl.OutlineColor = self.ArmOutlineColor
-                    hl.OutlineTransparency = self.ArmOutlineEnabled and 0 or 1
+                    existing.FillColor = self.ArmColor
+                    existing.FillTransparency = self.ArmAlpha
+                    existing.OutlineColor = self.ArmOutlineColor
+                    existing.OutlineTransparency = self.ArmOutlineEnabled and 0 or 1
                 end
             end)
         end
