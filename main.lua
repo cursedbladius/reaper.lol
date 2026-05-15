@@ -142,42 +142,49 @@ OptionsSection:Toggle({Name = "Team Check", Flag = "Team Check", Default = true,
     ESP:SetSetting("TeamCheck", Value)
 end})
 
-local ExtrasSection = GeneralSubTab:Section({Name = "Weapon Modifier", Side = 1})
+local GameSection = GeneralSubTab:Section({Name = "Game", Side = 1})
 
-ExtrasSection:Toggle({Name = "Tool Modifier", Flag = "ToolModifier", Default = false, Callback = function(Value)
+local ToolModOutline, ToolModMaterial, ToolModColorPicker
+local ToolModToggle = GameSection:Toggle({Name = "Tool Modifier", Flag = "ToolModifier", Default = false, Callback = function(Value)
     ToolModifier.Enabled = Value
     if not Value then
         ToolModifier:Reset()
     end
-end}):Colorpicker({Name = "", Flag = "ToolModifierColor", Default = Color3.fromRGB(255, 0, 0), DefaultAlpha = 0.4, Callback = function(Value, Alpha)
+    pcall(function()
+        if ToolModOutline then ToolModOutline:SetVisiblity(Value) end
+        if ToolModMaterial then ToolModMaterial:SetVisibility(Value) end
+    end)
+end})
+ToolModToggle:Colorpicker({Name = "", Flag = "ToolModifierColor", Default = Color3.fromRGB(255, 0, 0), DefaultAlpha = 0.4, Callback = function(Value, Alpha)
     ToolModifier.Color = Value
     ToolModifier.Alpha = Alpha or 0
 end})
 
-local OutlineToggle = ExtrasSection:Toggle({Name = "Outline", Flag = "ToolOutlineToggle", Default = true, Callback = function(Value)
+ToolModOutline = GameSection:Toggle({Name = "Outline", Flag = "ToolOutlineToggle", Default = true, Callback = function(Value)
     ToolModifier.OutlineEnabled = Value
 end})
-OutlineToggle:Colorpicker({Name = "", Flag = "ToolModifierOutline", Default = Color3.fromRGB(255, 255, 255), Callback = function(Value)
+ToolModOutline:Colorpicker({Name = "", Flag = "ToolModifierOutline", Default = Color3.fromRGB(255, 255, 255), Callback = function(Value)
     ToolModifier.OutlineColor = Value
 end})
+ToolModOutline:SetVisiblity(false)
 
-local ToolMaterialDropdown
-ToolMaterialDropdown = ExtrasSection:Dropdown({
+ToolModMaterial = GameSection:Dropdown({
     Name = "Tool Material",
     Flag = "ToolModifierMaterial",
     Default = "Highlight",
     Items = {"Highlight", "ForceField", "Neon"},
     Callback = function(Value)
         if Value == nil then
-            ToolMaterialDropdown:Set("Highlight")
+            ToolModMaterial:Set("Highlight")
             return
         end
         ToolModifier.Material = Value
         pcall(function()
-            OutlineToggle:SetVisiblity(Value == "Highlight")
+            ToolModOutline:SetVisiblity(Value == "Highlight" and ToolModifier.Enabled)
         end)
     end
 })
+ToolModMaterial:SetVisibility(false)
 
 local _toolModFrame = 0
 game:GetService("RunService").RenderStepped:Connect(function()
@@ -187,14 +194,17 @@ game:GetService("RunService").RenderStepped:Connect(function()
     end
 end)
 
-local ParticleSection = GeneralSubTab:Section({Name = "Particle Aura", Side = 2})
-ParticleSection:Toggle({Name = "Particle Aura", Flag = "ParticleAura", Default = false, Callback = function(Value)
+local ParticleDropdown
+GameSection:Toggle({Name = "Particle Aura", Flag = "ParticleAura", Default = false, Callback = function(Value)
     ParticleAura:Toggle(Value)
+    pcall(function()
+        if ParticleDropdown then ParticleDropdown:SetVisibility(Value) end
+    end)
 end}):Colorpicker({Name = "", Flag = "ParticleAuraColor", Default = Color3.fromRGB(133, 220, 255), DefaultAlpha = 0.2, Callback = function(Value, Alpha)
     ParticleAura:SetColor(Value)
 end})
 
-ParticleSection:Dropdown({
+ParticleDropdown = GameSection:Dropdown({
     Name = "Particle",
     Flag = "ParticleAuraType",
     Default = "angel",
@@ -205,6 +215,7 @@ ParticleSection:Dropdown({
         end
     end
 })
+ParticleDropdown:SetVisibility(false)
 
 if game.GameId == 111958650 or game.PlaceId == 286090429 then
     ArsenalAdapter:StartActor()
@@ -241,7 +252,7 @@ if game.GameId == 111958650 or game.PlaceId == 286090429 then
         ArsenalAdapter:InfiniteAmmo(Value)
     end})
 
-    local SkinSection = VisualsTab:Section({Name = "Skin-Changer", Side = 1})
+    local SkinSection = GeneralSubTab:Section({Name = "Skin-Changer", Side = 2})
     SkinSection:Toggle({Name = "Unlock All Items", Flag = "ArsenalUnlockAll", Default = false, Callback = function(Value)
         ArsenalAdapter:UnlockAll(Value)
     end})

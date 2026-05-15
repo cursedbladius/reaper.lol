@@ -3218,6 +3218,7 @@ local Library do
             Items["Subtab"] = Instances:Create("Frame", {
                 Parent = SubPage.Page.Elements["Columns"].Instance,
                 BackgroundTransparency = 1,
+                Visible = false,
                 Name = "\0",
                 BorderColor3 = FromRGB(0, 0, 0),
                 Size = UDim2New(1, 0, 1, 0),
