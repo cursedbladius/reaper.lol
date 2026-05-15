@@ -527,7 +527,11 @@ function Arsenal:GetToolTargets(playerName)
         local camera = workspace.CurrentCamera
         for _, child in pairs(camera:GetChildren()) do
             if child:IsA("Model") then
-                table.insert(targets, child)
+                for _, sub in pairs(child:GetChildren()) do
+                    if sub.Name == "Gun" or sub.Name == "gun" then
+                        table.insert(targets, sub)
+                    end
+                end
             end
         end
     end)
