@@ -1763,34 +1763,13 @@ local Library do
                 PlaceholderText = "FF0000",
                 Name = "\0",
                 Position = UDim2New(0, 32, 0, 0),
-                Size = UDim2New(1, -65, 1, 0),
+                Size = UDim2New(1, -35, 1, 0),
                 BackgroundTransparency = 1,
                 TextSize = 11,
                 BorderSizePixel = 0,
                 ClearTextOnFocus = false,
                 BackgroundColor3 = FromRGB(255, 255, 255)
             })  Items["HexInput"]:AddToTheme({TextColor3 = "Text"})
-            
-            Items["CopyHexButton"] = Instances:Create("TextButton", {
-                Parent = Items["HexFrame"].Instance,
-                FontFace = Library.Font,
-                TextColor3 = FromRGB(200, 200, 200),
-                BorderColor3 = FromRGB(0, 0, 0),
-                Text = "Copy",
-                AutoButtonColor = false,
-                Name = "\0",
-                Position = UDim2New(1, -32, 0, 1),
-                Size = UDim2New(0, 30, 1, -2),
-                TextSize = 10,
-                BorderSizePixel = 0,
-                BackgroundColor3 = FromRGB(40, 40, 45)
-            })
-            
-            Items["CopyHexButton"]:Connect("MouseButton1Down", function()
-                if setclipboard then
-                    setclipboard("#" .. Colorpicker.HexValue)
-                end
-            end)
             
             -- Handle hex input
             Items["HexInput"].Instance.FocusLost:Connect(function()
@@ -1988,9 +1967,100 @@ local Library do
             self:Update(true)
         end
 
-        -- Simple click handler (no context menu)
+        -- Click handlers
+        local ContextMenu = nil
+        
         Items["ColorpickerButton"]:Connect("MouseButton1Down", function()
+            if ContextMenu and ContextMenu.Instance then
+                ContextMenu:Clean()
+                ContextMenu = nil
+            end
             Colorpicker:SetOpen(not Colorpicker.IsOpen)
+        end)
+        
+        -- Right-click popup menu with only Copy HEX
+        Items["ColorpickerButton"]:Connect("MouseButton2Down", function()
+            if ContextMenu and ContextMenu.Instance then
+                ContextMenu:Clean()
+                ContextMenu = nil
+                return
+            end
+            
+            ContextMenu = Instances:Create("Frame", {
+                Parent = Data.Parent.Instance,
+                BorderColor3 = FromRGB(10, 10, 10),
+                AnchorPoint = Vector2New(1, 0),
+                Name = "\0",
+                Position = UDim2New(1, 0, 1, 5),
+                Size = UDim2New(0, 65, 0, 17),
+                BorderSizePixel = 2,
+                ZIndex = 10002,
+                BackgroundColor3 = FromRGB(15, 15, 20)
+            })  ContextMenu:AddToTheme({BackgroundColor3 = "Background", BorderColor3 = "Border"})
+            
+            Instances:Create("UIStroke", {
+                Parent = ContextMenu.Instance,
+                ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+                LineJoinMode = Enum.LineJoinMode.Miter,
+                Name = "\0",
+                Color = FromRGB(27, 27, 32),
+                ZIndex = 10002
+            }):AddToTheme({Color = "Outline"})
+            
+            local CopyButton = Instances:Create("TextButton", {
+                Parent = ContextMenu.Instance,
+                FontFace = Library.Font,
+                TextColor3 = FromRGB(215, 215, 215),
+                BorderColor3 = FromRGB(0, 0, 0),
+                Text = "Copy HEX",
+                AutoButtonColor = false,
+                Name = "\0",
+                BorderSizePixel = 0,
+                BackgroundTransparency = 1,
+                Position = UDim2New(0, 1, 0, 0),
+                Size = UDim2New(1, 0, 1, 0),
+                TextSize = 12,
+                ZIndex = 10003,
+                BackgroundColor3 = FromRGB(255, 255, 255)
+            })  CopyButton:AddToTheme({TextColor3 = "Text"})
+            
+            Instances:Create("UIStroke", {
+                Parent = CopyButton.Instance,
+                LineJoinMode = Enum.LineJoinMode.Miter,
+                Name = "\0",
+                ZIndex = 10003
+            }):AddToTheme({Color = "Text Border"})
+            
+            CopyButton:Connect("MouseButton1Down", function()
+                if setclipboard then
+                    setclipboard("#" .. Colorpicker.HexValue)
+                end
+                ContextMenu:Clean()
+                ContextMenu = nil
+            end)
+            
+            -- Close on outside click
+            task.delay(0.05, function()
+                local CloseConnection
+                CloseConnection = UserInputService.InputBegan:Connect(function(Input)
+                    if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.MouseButton2 then
+                        if ContextMenu and ContextMenu.Instance then
+                            local MousePos = UserInputService:GetMouseLocation()
+                            local MenuPos = ContextMenu.Instance.AbsolutePosition
+                            local MenuSize = ContextMenu.Instance.AbsoluteSize
+                            
+                            if MousePos.X < MenuPos.X or MousePos.X > MenuPos.X + MenuSize.X or
+                               MousePos.Y < MenuPos.Y or MousePos.Y > MenuPos.Y + MenuSize.Y then
+                                CloseConnection:Disconnect()
+                                ContextMenu:Clean()
+                                ContextMenu = nil
+                            end
+                        else
+                            CloseConnection:Disconnect()
+                        end
+                    end
+                end)
+            end)
         end)
 
         local PaletteChanged
