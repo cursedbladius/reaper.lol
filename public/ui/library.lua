@@ -1904,7 +1904,11 @@ local Library do
         -- Right-click context menu
         local ContextMenu = nil
         
-        Items["ColorpickerButton"]:Connect("MouseButton2Down", function()
+        Items["ColorpickerButton"]:Connect("InputBegan", function(Input)
+            if Input.UserInputType ~= Enum.UserInputType.MouseButton2 then
+                return
+            end
+            
             if ContextMenu and ContextMenu.Instance then
                 ContextMenu:Clean()
                 ContextMenu = nil
