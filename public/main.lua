@@ -1,4 +1,4 @@
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/sametexe001/sametlibs/refs/heads/main/Thugsense/Library.lua"))()
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/cursedbladius/reaper.lol/refs/heads/main/public/ui/library.lua"))()
 
 --
 local Window = Library:Window({
