@@ -180,6 +180,20 @@ game:GetService("RunService").RenderStepped:Connect(function()
     ToolModifier:Apply()
 end)
 
+if game.GameId == 111958650 or game.PlaceId == 286090429 then
+    local SkinSection = VisualsTab:Section({Name = "Skin-Changer", Side = 2})
+    SkinSection:Dropdown({
+        Name = "Melee Skin",
+        Flag = "ArsenalMeleeSkin",
+        Default = nil,
+        Items = ArsenalAdapter.MeleeSkins,
+        Callback = function(Value)
+            if Value == nil then return end
+            ArsenalAdapter:SetMeleeSkin(Value)
+        end
+    })
+end
+
 local WalkSection = MovementTab:Section({Name = "Walk", Side = 1})
 local FlySection = MovementTab:Section({Name = "Fly", Side = 1})
 local JumpSection = MovementTab:Section({Name = "Jump", Side = 2})
