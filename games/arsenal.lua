@@ -2,7 +2,15 @@ local Arsenal = {}
 
 function Arsenal:GetToolTargets(playerName)
     local targets = {}
-    local viewmodels = game:GetService("ReplicatedStorage"):FindFirstChild("Viewmodels")
+
+    local repStorage = game:GetService("ReplicatedStorage")
+    local viewmodels = nil
+    for _, child in pairs(repStorage:GetChildren()) do
+        if child.Name == "Viewmodels" then
+            viewmodels = child
+            break
+        end
+    end
     if not viewmodels then return targets end
 
     for _, child in pairs(viewmodels:GetChildren()) do
