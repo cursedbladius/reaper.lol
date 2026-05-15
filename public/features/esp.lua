@@ -640,7 +640,12 @@ function ESP:Unload()
         self.Connection = nil
     end
 
-    for _, obj in pairs(self.Objects) do
+    for player, obj in pairs(self.Objects) do
+        -- Explicitly destroy Highlights first
+        if obj.Highlight then
+            pcall(function() obj.Highlight:Destroy() end)
+            obj.Highlight = nil
+        end
         DestroyESPObject(obj)
     end
     self.Objects = {}
