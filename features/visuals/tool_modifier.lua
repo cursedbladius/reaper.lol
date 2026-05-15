@@ -331,48 +331,23 @@ local function ApplyToArmTargets(self)
         end
     end
 
-    if self.ArmMaterial == "Highlight" then
-        for _, p in pairs(allParts) do
-            pcall(function()
-                local orig = ArmOriginals[p]
-                if orig then
-                    p.Material = orig.Material
-                    p.Color = orig.Color
-                    p.BrickColor = orig.BrickColor
-                end
-            end)
-            pcall(function()
-                local existing = nil
-                for _, c in pairs(p:GetChildren()) do
-                    if c.Name == "_ArmModHighlight" then existing = c break end
-                end
-                if not existing then
-                    local hl = Instance.new("Highlight")
-                    hl.Name = "_ArmModHighlight"
-                    hl.Adornee = p
-                    hl.FillColor = self.ArmColor
-                    hl.FillTransparency = self.ArmAlpha
-                    hl.OutlineColor = self.ArmOutlineColor
-                    hl.OutlineTransparency = self.ArmOutlineEnabled and 0 or 1
-                    hl.Parent = p
-                    table.insert(ArmHighlights, hl)
-                else
-                    existing.FillColor = self.ArmColor
-                    existing.FillTransparency = self.ArmAlpha
-                    existing.OutlineColor = self.ArmOutlineColor
-                    existing.OutlineTransparency = self.ArmOutlineEnabled and 0 or 1
-                end
-            end)
-        end
-    else
-        for _, hl in pairs(ArmHighlights) do
-            pcall(function() hl:Destroy() end)
-        end
-        ArmHighlights = {}
+    for _, hl in pairs(ArmHighlights) do
+        pcall(function() hl:Destroy() end)
+    end
+    ArmHighlights = {}
 
-        local mat = self.ArmMaterial == "ForceField" and Enum.Material.ForceField or Enum.Material.Neon
-        for _, p in pairs(allParts) do
-            pcall(function()
+    local mat
+    if self.ArmMaterial == "Highlight" then
+        mat = Enum.Material.Neon
+    elseif self.ArmMaterial == "ForceField" then
+        mat = Enum.Material.ForceField
+    else
+        mat = Enum.Material.Neon
+    end
+
+    for _, p in pairs(allParts) do
+        pcall(function()
+            if p.Transparency < 1 then
                 p.Material = mat
                 if self.ArmMaterial == "ForceField" then
                     p.BrickColor = BrickColor.new(self.ArmColor)
@@ -380,18 +355,22 @@ local function ApplyToArmTargets(self)
                     p.Color = self.ArmColor
                 end
                 pcall(function() p.TextureID = "" end)
-            end)
-        end
-        for _, target in pairs(targets) do
-            for _, p in pairs(target:GetDescendants()) do
-                pcall(function()
-                    if p:IsA("SpecialMesh") or p:IsA("FileMesh") then
-                        p.TextureId = ""
-                    elseif p:IsA("SurfaceAppearance") or p:IsA("Decal") or p:IsA("Texture") then
-                        p.Parent = nil
-                    end
-                end)
             end
+        end)
+    end
+    for _, target in pairs(targets) do
+        local items = {target}
+        for _, d in pairs(target:GetDescendants()) do
+            table.insert(items, d)
+        end
+        for _, p in pairs(items) do
+            pcall(function()
+                if p:IsA("SpecialMesh") or p:IsA("FileMesh") then
+                    p.TextureId = ""
+                elseif p:IsA("SurfaceAppearance") or p:IsA("Decal") or p:IsA("Texture") then
+                    p.Parent = nil
+                end
+            end)
         end
     end
 end
