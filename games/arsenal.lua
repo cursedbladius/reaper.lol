@@ -336,8 +336,10 @@ function Arsenal:_updateSelectedFlag()
             table.insert(parts, cat .. ":" .. name)
         end
     end
+    local encoded = table.concat(parts, ";")
+    warn("[Arsenal] Selected flag:", encoded, "| Flag exists:", self._selectedFlag ~= nil)
     if self._selectedFlag then
-        self._selectedFlag.Value = table.concat(parts, ";")
+        self._selectedFlag.Value = encoded
     end
 end
 
