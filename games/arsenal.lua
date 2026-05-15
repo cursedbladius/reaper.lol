@@ -513,11 +513,7 @@ function Arsenal:GetToolTargets(playerName)
         local wrapName = "HWRAP_" .. playerName
         for _, child in pairs(workspace:GetChildren()) do
             if child.Name == wrapName then
-                for _, sub in pairs(child:GetChildren()) do
-                    if sub:IsA("Model") or sub:IsA("BasePart") then
-                        table.insert(targets, sub)
-                    end
-                end
+                table.insert(targets, child)
                 break
             end
         end
@@ -526,13 +522,9 @@ function Arsenal:GetToolTargets(playerName)
     pcall(function()
         local camera = workspace.CurrentCamera
         for _, child in pairs(camera:GetChildren()) do
-            if child:IsA("Model") then
-                for _, sub in pairs(child:GetChildren()) do
-                    local n = sub.Name:lower()
-                    if not n:find("arm") and not n:find("sleeve") and not n:find("hand") and (sub:IsA("Model") or sub:IsA("BasePart")) then
-                        table.insert(targets, sub)
-                    end
-                end
+            if child.Name == "Arms" and child:IsA("Model") then
+                table.insert(targets, child)
+                break
             end
         end
     end)
@@ -545,13 +537,9 @@ function Arsenal:GetArmTargets(playerName)
     pcall(function()
         local camera = workspace.CurrentCamera
         for _, child in pairs(camera:GetChildren()) do
-            if child:IsA("Model") then
-                for _, sub in pairs(child:GetChildren()) do
-                    local n = sub.Name:lower()
-                    if (n:find("arm") or n:find("sleeve") or n:find("hand")) and (sub:IsA("Model") or sub:IsA("BasePart")) then
-                        table.insert(targets, sub)
-                    end
-                end
+            if child.Name == "Arms" and child:IsA("Model") then
+                table.insert(targets, child)
+                break
             end
         end
     end)
