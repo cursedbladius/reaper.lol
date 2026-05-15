@@ -100,25 +100,31 @@ function Arsenal:UnlockAll()
     end
     if not images then return end
 
-    local localPlayer = game:GetService("Players").LocalPlayer
     local inventoryData = nil
-    for _, v in pairs(getgc(true)) do
-        if typeof(v) == "table" and rawget(v, "Loadout") and typeof(rawget(v, "Items")) == "table" then
-            inventoryData = v.Items
-            break
-        end
-    end
-    if not inventoryData then return end
-
-    for _, category in pairs(images:GetChildren()) do
-        if inventoryData[category.Name] then
-            for _, item in pairs(category:GetChildren()) do
-                if not inventoryData[category.Name][item.Name] then
-                    inventoryData[category.Name][item.Name] = 1
-                end
+    if typeof(getgc) == "function" then
+        for _, v in pairs(getgc(true)) do
+            if typeof(v) == "table" and rawget(v, "Loadout") and typeof(rawget(v, "Items")) == "table" then
+                inventoryData = v.Items
+                break
             end
         end
     end
+    if not inventoryData then
+        warn("[Arsenal] Could not find inventory data via getgc")
+        return
+    end
+
+    for _, category in pairs(images:GetChildren()) do
+        if not inventoryData[category.Name] then
+            inventoryData[category.Name] = {}
+        end
+        for _, item in pairs(category:GetChildren()) do
+            if not inventoryData[category.Name][item.Name] then
+                inventoryData[category.Name][item.Name] = 1
+            end
+        end
+    end
+    warn("[Arsenal] Unlocked all items")
 end
 
 function Arsenal:SetMeleeSkin(skinName)
