@@ -92,13 +92,14 @@ local function CreateESPObject()
     obj.HealthBarBackground = NewSquare({Thickness = 1, Color = Color3.new(0, 0, 0), Filled = true})
     obj.HealthBar = NewSquare({Thickness = 1, Color = Color3.new(0, 1, 0), Filled = true})
 
-    -- Gradient segments (used when gradient is enabled)
-    local GRADIENT_SEGMENTS = 16
+    -- Gradient segments (filled squares that tile the bar height)
+    local GRADIENT_SEGMENTS = 12
     obj.GradientLines = {}
     for i = 1, GRADIENT_SEGMENTS do
-        obj.GradientLines[i] = Drawing.new("Line")
+        obj.GradientLines[i] = Drawing.new("Square")
         obj.GradientLines[i].Visible = false
-        obj.GradientLines[i].Thickness = 1
+        obj.GradientLines[i].Filled = true
+        obj.GradientLines[i].Thickness = 0
         obj.GradientLines[i].Transparency = 1
     end
 
@@ -379,17 +380,19 @@ local function UpdateESP()
                 local segCount = #segments
                 local fillTop = barY + (barHeight - fillHeight)
 
+                local segHeight = fillHeight / segCount
                 for i = 1, segCount do
                     local t = (i - 1) / (segCount - 1)
-                    local lineY = math.floor(fillTop + t * (fillHeight - 1))
+                    local segY = fillTop + (i - 1) * segHeight
+                    local segH = math.ceil(segHeight)
 
                     -- Blend: top of fill = topColor, bottom of fill = bottomColor
                     local r = math.floor(topColor.R * 255 * (1 - t) + bottomColor.R * 255 * t)
                     local g = math.floor(topColor.G * 255 * (1 - t) + bottomColor.G * 255 * t)
                     local b = math.floor(topColor.B * 255 * (1 - t) + bottomColor.B * 255 * t)
 
-                    segments[i].From = Vector2.new(barX, lineY)
-                    segments[i].To = Vector2.new(barX + barWidth, lineY)
+                    segments[i].Position = Vector2.new(barX, math.floor(segY))
+                    segments[i].Size = Vector2.new(barWidth, segH)
                     segments[i].Color = Color3.fromRGB(r, g, b)
                     segments[i].Visible = true
                 end
