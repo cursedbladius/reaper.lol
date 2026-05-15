@@ -137,7 +137,6 @@ local ToolModifierEnabled = false
 local ToolModifierColor = Color3.fromRGB(255, 255, 255)
 local ToolModifierAlpha = 0
 local ToolModifierMaterial = "Default"
-local OriginalToolProps = {}
 local CurrentTool = nil
 
 local MaterialMap = {
@@ -145,66 +144,60 @@ local MaterialMap = {
     ["ForceField"] = Enum.Material.ForceField,
 }
 
+local ToolHighlight = nil
+local ToolOriginalMaterials = {}
+
 local function ResetToolModifier()
-    for part, props in pairs(OriginalToolProps) do
-        if part and part.Parent then
-            pcall(function()
-                part.Color = props.Color
-                part.Material = props.Material
-                part.Transparency = props.Transparency
-                if props.Mesh and props.VertexColor then
-                    props.Mesh.VertexColor = props.VertexColor
-                end
-            end)
-        end
+    if ToolHighlight then
+        pcall(function() ToolHighlight:Destroy() end)
+        ToolHighlight = nil
     end
-    OriginalToolProps = {}
+    for part, mat in pairs(ToolOriginalMaterials) do
+        pcall(function() part.Material = mat end)
+    end
+    ToolOriginalMaterials = {}
+    CurrentTool = nil
 end
 
 local function ApplyToolModifier()
     local character = game:GetService("Players").LocalPlayer and game:GetService("Players").LocalPlayer.Character
     if not character then return end
     local tool = character:FindFirstChildOfClass("Tool")
-    if not tool then return end
+    if not tool then
+        if ToolHighlight then
+            ToolHighlight.Enabled = false
+        end
+        return
+    end
 
-    -- Reset stored props when switching tools
+    -- Reset when switching tools
     if tool ~= CurrentTool then
         ResetToolModifier()
         CurrentTool = tool
     end
 
-    for _, part in ipairs(tool:GetDescendants()) do
-        if part:IsA("BasePart") then
-            if not OriginalToolProps[part] then
-                local mesh = part:FindFirstChildOfClass("SpecialMesh")
-                OriginalToolProps[part] = {
-                    Color = part.Color,
-                    Material = part.Material,
-                    Transparency = part.Transparency,
-                    Mesh = mesh,
-                    VertexColor = mesh and mesh.VertexColor or nil
-                }
-            end
-
-            -- Skip parts that are originally fully transparent (invisible)
-            if OriginalToolProps[part].Transparency >= 1 then continue end
-
-            if ToolModifierMaterial == "ForceField" then
-                part.Material = Enum.Material.ForceField
-            else
-                part.Color = ToolModifierColor
-                part.Transparency = ToolModifierAlpha
-                part.Material = OriginalToolProps[part].Material
-                -- Tint textured meshes via VertexColor
-                if OriginalToolProps[part].Mesh then
-                    pcall(function()
-                        OriginalToolProps[part].Mesh.VertexColor = Vector3.new(
-                            ToolModifierColor.R,
-                            ToolModifierColor.G,
-                            ToolModifierColor.B
-                        )
-                    end)
+    -- Handle Highlight for color tinting
+    if ToolModifierMaterial ~= "ForceField" then
+        if not ToolHighlight or not ToolHighlight.Parent then
+            ToolHighlight = Instance.new("Highlight")
+            ToolHighlight.OutlineTransparency = 1
+            ToolHighlight.Parent = tool
+        end
+        ToolHighlight.Adornee = tool
+        ToolHighlight.FillColor = ToolModifierColor
+        ToolHighlight.FillTransparency = 1 - ToolModifierAlpha
+        ToolHighlight.Enabled = true
+    else
+        if ToolHighlight then
+            ToolHighlight.Enabled = false
+        end
+        -- Apply ForceField material to all visible parts
+        for _, part in ipairs(tool:GetDescendants()) do
+            if part:IsA("BasePart") and part.Transparency < 1 then
+                if not ToolOriginalMaterials[part] then
+                    ToolOriginalMaterials[part] = part.Material
                 end
+                part.Material = Enum.Material.ForceField
             end
         end
     end
@@ -233,11 +226,11 @@ ToolMaterialDropdown = ExtrasSection:Dropdown({
         end
         ToolModifierMaterial = Value
         if Value == "Default" and ToolModifierEnabled then
-            for part, props in pairs(OriginalToolProps) do
-                if part and part.Parent then
-                    pcall(function() part.Material = props.Material end)
-                end
+            -- Restore ForceField materials back to original
+            for part, mat in pairs(ToolOriginalMaterials) do
+                pcall(function() part.Material = mat end)
             end
+            ToolOriginalMaterials = {}
         end
     end
 })
