@@ -1915,15 +1915,13 @@ local Library do
                 return
             end
             
-            local ButtonPos = Items["ColorpickerButton"].Instance.AbsolutePosition
-            local ButtonSize = Items["ColorpickerButton"].Instance.AbsoluteSize
-            
             ContextMenu = Instances:Create("Frame", {
-                Parent = Library.Holder.Instance,
-                Name = "\0",
-                Position = UDim2New(0, ButtonPos.X, 0, ButtonPos.Y + ButtonSize.Y + 2),
-                Size = UDim2New(0, 80, 0, 45),
+                Parent = Data.Parent.Instance,
                 BorderColor3 = FromRGB(10, 10, 10),
+                AnchorPoint = Vector2New(1, 0),
+                Name = "\0",
+                Position = UDim2New(1, 0, 1, 5),
+                Size = UDim2New(0, 75, 0, 45),
                 BorderSizePixel = 2,
                 ZIndex = 10002,
                 BackgroundColor3 = FromRGB(15, 15, 20)
@@ -1939,23 +1937,30 @@ local Library do
             }):AddToTheme({Color = "Outline"})
             
             local MenuOptions = {
-                {Name = "Copy Colour", Callback = function()
+                {Name = "Copy", Callback = function()
                     if setclipboard then
-                        setclipboard(tostring(Colorpicker.Color))
+                        -- Copy as hex for better compatibility
+                        setclipboard("#" .. Colorpicker.HexValue)
                     end
                     if ContextMenu then
                         ContextMenu:Clean()
                         ContextMenu = nil
                     end
                 end},
-                {Name = "Paste Colour", Callback = function()
+                {Name = "Paste", Callback = function()
                     if getclipboard then
                         local clipboard = getclipboard()
                         if clipboard then
-                            -- Try to parse as hex or rgb
-                            local hex = clipboard:match("#?([0-9A-Fa-f]+)")
-                            if hex and #hex >= 6 then
-                                Colorpicker:Set(FromHex(hex:sub(1, 6)))
+                            -- Try hex format first (with or without #)
+                            local hex = clipboard:match("#?([0-9A-Fa-f]{6})")
+                            if hex then
+                                Colorpicker:Set(FromHex(hex))
+                            else
+                                -- Try Color3 format: "R, G, B" or "R G B"
+                                local r, g, b = clipboard:match("(%d+)[, ]+(%d+)[, ]+(%d+)")
+                                if r and g and b then
+                                    Colorpicker:Set(Color3.fromRGB(tonumber(r), tonumber(g), tonumber(b)))
+                                end
                             end
                         end
                     end
@@ -1978,18 +1983,18 @@ local Library do
             for i, Option in ipairs(MenuOptions) do
                 local MenuButton = Instances:Create("TextButton", {
                     Parent = ContextMenu.Instance,
-                    Name = "\0",
-                    Size = UDim2New(1, 0, 0, 15),
-                    Position = UDim2New(0, 1, 0, (i - 1) * 15),
-                    BackgroundTransparency = 1,
-                    Text = Option.Name,
                     FontFace = Library.Font,
                     TextColor3 = FromRGB(215, 215, 215),
                     BorderColor3 = FromRGB(0, 0, 0),
-                    TextSize = 12,
+                    Text = Option.Name,
                     AutoButtonColor = false,
-                    ZIndex = 10003,
+                    Name = "\0",
                     BorderSizePixel = 0,
+                    BackgroundTransparency = 1,
+                    Position = UDim2New(0, 1, 0, (i - 1) * 15),
+                    Size = UDim2New(1, 0, 0, 15),
+                    TextSize = 12,
+                    ZIndex = 10003,
                     BackgroundColor3 = FromRGB(255, 255, 255)
                 })  MenuButton:AddToTheme({TextColor3 = "Text"})
                 
