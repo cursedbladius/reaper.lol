@@ -17,6 +17,7 @@ ESP.Settings = {
     BoxType = "Dynamic",
     Name = true,
     NameColor = Color3.fromRGB(255, 255, 255),
+    NameType = "DisplayName",
     HealthBar = true,
     HealthColor = Color3.fromRGB(0, 255, 0),
     Distance = false,
@@ -40,8 +41,6 @@ ESP.Connection = nil
 -- Font mapping
 local FontMap = {
     ["Tahoma"] = 2,
-    ["Plex"] = 2,
-    ["System"] = 1,
     ["Monospace"] = 3,
 }
 
@@ -271,7 +270,7 @@ local function UpdateESP()
 
         -- ═══════════════════════ NAME ESP ═══════════════════════
         if ESP.Settings.Name then
-            obj.Name.Text = player.DisplayName
+            obj.Name.Text = ESP.Settings.NameType == "Username" and player.Name or player.DisplayName
             obj.Name.Position = Vector2.new(bounds.X + bounds.Width / 2, bounds.Y - 16)
             obj.Name.Color = ESP.Settings.NameColor
             obj.Name.Font = GetFont(ESP.Settings.Font)
