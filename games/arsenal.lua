@@ -89,26 +89,20 @@ end
 
 Arsenal._unlockAll = false
 Arsenal._selectedItems = {}
-Arsenal._actorReady = false
 
-function Arsenal:InitInventoryActor()
-    if self._actorReady then return end
-    self._actorReady = true
-
+function Arsenal:RunOnActor(script, ...)
     local actor = getactors()[1]
     if not actor then
         warn("[Arsenal] No actor found")
         return
     end
+    run_on_actor(actor, script, ...)
+end
 
-    local id, channel = create_comm_channel()
-    self._commId = id
-    self._commChannel = channel
-
-    run_on_actor(actor, [=[
-        local commId = ...
-        local channel = get_comm_channel(commId)
-        local Players = game:GetService("Players")
+function Arsenal:UnlockAll(enabled)
+    self._unlockAll = enabled
+    if not enabled then return end
+    self:RunOnActor([=[
         local ReplicatedStorage = game:GetService("ReplicatedStorage")
         local RunService = game:GetService("RunService")
         local Items = ReplicatedStorage.ItemData.Images
@@ -120,98 +114,61 @@ function Arsenal:InitInventoryActor()
                 break
             end
         end
-
         if not InventoryData then
             warn("[Arsenal] Could not find inventory data on actor")
             return
         end
 
-        warn("[Arsenal] Inventory actor ready")
-
-        local unlockAll = false
-        local selectedItems = {}
-        local originalInventory = {}
-
-        for catName, catData in next, InventoryData do
-            if typeof(catData) == "table" then
-                originalInventory[catName] = {}
-                for itemName, itemVal in next, catData do
-                    originalInventory[catName][itemName] = itemVal
-                end
-            end
-        end
-
-        local function SyncInventory()
-            if unlockAll then
-                for _, v in next, Items:GetChildren() do
-                    if InventoryData[v.Name] then
-                        for _, f in next, v:GetChildren() do
-                            if not InventoryData[v.Name][f.Name] then
-                                InventoryData[v.Name][f.Name] = 1
-                            end
-                        end
-                    end
-                end
-            else
-                for catName, catData in next, InventoryData do
-                    if typeof(catData) == "table" and originalInventory[catName] then
-                        for itemName, _ in next, catData do
-                            if not originalInventory[catName][itemName] then
-                                if not (selectedItems[catName] and selectedItems[catName][itemName]) then
-                                    catData[itemName] = nil
-                                end
-                            end
-                        end
-                    end
-                end
-                for catName, items in next, selectedItems do
-                    if InventoryData[catName] then
-                        for itemName, _ in next, items do
-                            InventoryData[catName][itemName] = InventoryData[catName][itemName] or 1
+        local function AddAll()
+            for _, v in next, Items:GetChildren() do
+                if InventoryData[v.Name] then
+                    for _, f in next, v:GetChildren() do
+                        if not InventoryData[v.Name][f.Name] then
+                            InventoryData[v.Name][f.Name] = 1
                         end
                     end
                 end
             end
         end
 
-        channel.Event:Connect(function(data)
-            if data.action == "unlockAll" then
-                unlockAll = data.value
-                SyncInventory()
-            elseif data.action == "setItems" then
-                selectedItems = data.items or {}
-                SyncInventory()
-            end
-        end)
-
+        AddAll()
         RunService.Heartbeat:Connect(function()
-            SyncInventory()
+            AddAll()
         end)
-    ]=], id)
+        warn("[Arsenal] Unlock All active on actor")
+    ]=])
 end
 
-function Arsenal:SendToActor(data)
-    if self._commChannel then
-        self._commChannel:Fire(data)
-    end
-end
+function Arsenal:AddToInventory(category, itemNames)
+    if #itemNames == 0 then return end
+    local encoded = table.concat(itemNames, "|")
+    self:RunOnActor([=[
+        local category, encoded = ...
+        local items = {}
+        for item in string.gmatch(encoded, "[^|]+") do
+            table.insert(items, item)
+        end
 
-function Arsenal:UnlockAll(enabled)
-    self._unlockAll = enabled
-    self:InitInventoryActor()
-    self:SendToActor({action = "unlockAll", value = enabled})
+        local InventoryData = nil
+        for i, v in next, getgc(true) do
+            if typeof(v) == "table" and rawget(v, "Loadout") and typeof(rawget(v, "Items")) == "table" then
+                InventoryData = v.Items
+                break
+            end
+        end
+        if not InventoryData then return end
+        if not InventoryData[category] then return end
+
+        for _, itemName in next, items do
+            InventoryData[category][itemName] = InventoryData[category][itemName] or 1
+        end
+        warn("[Arsenal] Added", #items, "items to", category)
+    ]=], category, encoded)
 end
 
 function Arsenal:SetSelectedItems(category, items)
-    if not self._selectedItems[category] then
-        self._selectedItems[category] = {}
-    end
-    self._selectedItems[category] = {}
-    for _, name in next, items do
-        self._selectedItems[category][name] = true
-    end
-    self:InitInventoryActor()
-    self:SendToActor({action = "setItems", items = self._selectedItems})
+    self._selectedItems[category] = items
+    self:AddToInventory(category, items)
 end
 
 function Arsenal:SetMeleeSkin(skinName)
