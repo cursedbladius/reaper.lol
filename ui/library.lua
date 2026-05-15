@@ -1780,7 +1780,7 @@ local Library do
                     -- Validate hex (6 characters)
                     if text:match("^[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]$") then
                         pcall(function()
-                            Colorpicker:Set(FromHex(text))
+                            Colorpicker:Set(FromHex(text), Colorpicker.Alpha)
                         end)
                     end
                 end
@@ -1794,7 +1794,7 @@ local Library do
                 -- Auto-apply if exactly 6 hex chars (no #)
                 if text and text:match("^[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]$") then
                     pcall(function()
-                        Colorpicker:Set(FromHex(text))
+                        Colorpicker:Set(FromHex(text), Colorpicker.Alpha)
                     end)
                 end
             end)
@@ -2173,7 +2173,8 @@ local Library do
         end)
 
         if Data.Default then 
-            Colorpicker:Set(Data.Default, Data.Alpha)
+            local initAlpha = Data.DefaultAlpha or (type(Data.Alpha) == "number" and Data.Alpha) or 0
+            Colorpicker:Set(Data.Default, initAlpha)
         end
 
         Library.SetFlags[Data.Flag] = function(Color, Alpha)
