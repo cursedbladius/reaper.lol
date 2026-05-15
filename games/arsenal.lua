@@ -3,26 +3,23 @@ local Arsenal = {}
 function Arsenal:GetToolTargets(playerName)
     local targets = {}
 
-    local repStorage = game:GetService("ReplicatedStorage")
-    local viewmodels = nil
-    for _, child in pairs(repStorage:GetChildren()) do
-        if child.Name == "Viewmodels" then
-            viewmodels = child
+    local wrapName = "HWRAP_" .. playerName
+    local wrap = nil
+    for _, child in pairs(workspace:GetChildren()) do
+        if child.Name == wrapName then
+            wrap = child
             break
         end
     end
-    if not viewmodels then
-        warn("[Arsenal] Viewmodels folder NOT found")
-        return targets
-    end
+    if not wrap then return targets end
 
-    for _, child in pairs(viewmodels:GetChildren()) do
-        if child.Name:sub(1, 2) == "v_" then
+    for _, child in pairs(wrap:GetChildren()) do
+        if child.Name == "Gun" then
             table.insert(targets, child)
+            break
         end
     end
 
-    warn("[Arsenal] Found", #targets, "viewmodel targets")
     return targets
 end
 
