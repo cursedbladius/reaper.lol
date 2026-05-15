@@ -87,11 +87,13 @@ function Arsenal:GetAllCategories()
     return categories
 end
 
-Arsenal._unlockActive = false
+Arsenal._unlockAll = false
+Arsenal._selectedItems = {}
+Arsenal._actorReady = false
 
-function Arsenal:UnlockAll(enabled)
-    self._unlockActive = enabled
-    if not enabled then return end
+function Arsenal:InitInventoryActor()
+    if self._actorReady then return end
+    self._actorReady = true
 
     local actor = getactors()[1]
     if not actor then
@@ -99,11 +101,16 @@ function Arsenal:UnlockAll(enabled)
         return
     end
 
+    local id, channel = create_comm_channel()
+    self._commId = id
+    self._commChannel = channel
+
     run_on_actor(actor, [=[
+        local commId = ...
+        local channel = get_comm_channel(commId)
         local Players = game:GetService("Players")
         local ReplicatedStorage = game:GetService("ReplicatedStorage")
         local RunService = game:GetService("RunService")
-        local LocalPlayer = Players.LocalPlayer
         local Items = ReplicatedStorage.ItemData.Images
 
         local InventoryData = nil
@@ -119,33 +126,92 @@ function Arsenal:UnlockAll(enabled)
             return
         end
 
-        local function AddEveryItem()
-            for _, v in next, Items:GetChildren() do
-                if InventoryData[v.Name] then
-                    for _, f in next, v:GetChildren() do
-                        if not InventoryData[v.Name][f.Name] then
-                            InventoryData[v.Name][f.Name] = 1
+        warn("[Arsenal] Inventory actor ready")
+
+        local unlockAll = false
+        local selectedItems = {}
+        local originalInventory = {}
+
+        for catName, catData in next, InventoryData do
+            if typeof(catData) == "table" then
+                originalInventory[catName] = {}
+                for itemName, itemVal in next, catData do
+                    originalInventory[catName][itemName] = itemVal
+                end
+            end
+        end
+
+        local function SyncInventory()
+            if unlockAll then
+                for _, v in next, Items:GetChildren() do
+                    if InventoryData[v.Name] then
+                        for _, f in next, v:GetChildren() do
+                            if not InventoryData[v.Name][f.Name] then
+                                InventoryData[v.Name][f.Name] = 1
+                            end
+                        end
+                    end
+                end
+            else
+                for catName, catData in next, InventoryData do
+                    if typeof(catData) == "table" and originalInventory[catName] then
+                        for itemName, _ in next, catData do
+                            if not originalInventory[catName][itemName] then
+                                if not (selectedItems[catName] and selectedItems[catName][itemName]) then
+                                    catData[itemName] = nil
+                                end
+                            end
+                        end
+                    end
+                end
+                for catName, items in next, selectedItems do
+                    if InventoryData[catName] then
+                        for itemName, _ in next, items do
+                            InventoryData[catName][itemName] = InventoryData[catName][itemName] or 1
                         end
                     end
                 end
             end
         end
 
-        AddEveryItem()
-        RunService.Heartbeat:Connect(function()
-            for _, v in next, Items:GetChildren() do
-                if InventoryData[v.Name] then
-                    for _, f in next, v:GetChildren() do
-                        if not InventoryData[v.Name][f.Name] then
-                            AddEveryItem()
-                            return
-                        end
-                    end
-                end
+        channel.Event:Connect(function(data)
+            if data.action == "unlockAll" then
+                unlockAll = data.value
+                SyncInventory()
+            elseif data.action == "setItems" then
+                selectedItems = data.items or {}
+                SyncInventory()
             end
         end)
-        warn("[Arsenal] Unlock All active on actor")
-    ]=])
+
+        RunService.Heartbeat:Connect(function()
+            SyncInventory()
+        end)
+    ]=], id)
+end
+
+function Arsenal:SendToActor(data)
+    if self._commChannel then
+        self._commChannel:Fire(data)
+    end
+end
+
+function Arsenal:UnlockAll(enabled)
+    self._unlockAll = enabled
+    self:InitInventoryActor()
+    self:SendToActor({action = "unlockAll", value = enabled})
+end
+
+function Arsenal:SetSelectedItems(category, items)
+    if not self._selectedItems[category] then
+        self._selectedItems[category] = {}
+    end
+    self._selectedItems[category] = {}
+    for _, name in next, items do
+        self._selectedItems[category][name] = true
+    end
+    self:InitInventoryActor()
+    self:SendToActor({action = "setItems", items = self._selectedItems})
 end
 
 function Arsenal:SetMeleeSkin(skinName)

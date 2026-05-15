@@ -202,53 +202,73 @@ if game.GameId == 111958650 or game.PlaceId == 286090429 then
         ArsenalAdapter:UnlockAll(Value)
     end})
     SkinSection:Dropdown({
-        Name = "Melee Skin",
+        Name = "Melee Skins",
         Flag = "ArsenalMeleeSkin",
-        Default = nil,
+        Multi = true,
         Items = ArsenalAdapter:GetItemNames("Melees"),
         Callback = function(Value)
-            if Value == nil then return end
-            ArsenalAdapter:SetMeleeSkin(Value)
+            local selected = {}
+            for name, state in next, Value do
+                if state then table.insert(selected, name) end
+            end
+            ArsenalAdapter:SetSelectedItems("Melees", selected)
+            if selected[1] then ArsenalAdapter:SetMeleeSkin(selected[1]) end
         end
     })
     SkinSection:Dropdown({
-        Name = "Gun Skin",
+        Name = "Gun Skins",
         Flag = "ArsenalGunSkin",
-        Default = nil,
+        Multi = true,
         Items = ArsenalAdapter:GetItemNames("WeaponSkins"),
         Callback = function(Value)
-            if Value == nil then return end
-            ArsenalAdapter:SetGunSkin(Value)
+            local selected = {}
+            for name, state in next, Value do
+                if state then table.insert(selected, name) end
+            end
+            ArsenalAdapter:SetSelectedItems("WeaponSkins", selected)
+            if selected[1] then ArsenalAdapter:SetGunSkin(selected[1]) end
         end
     })
     SkinSection:Dropdown({
-        Name = "Kill Effect",
+        Name = "Kill Effects",
         Flag = "ArsenalKillEffect",
-        Default = nil,
+        Multi = true,
         Items = ArsenalAdapter:GetItemNames("KillEffects"),
         Callback = function(Value)
-            if Value == nil then return end
-            ArsenalAdapter:SetKillEffect(Value)
+            local selected = {}
+            for name, state in next, Value do
+                if state then table.insert(selected, name) end
+            end
+            ArsenalAdapter:SetSelectedItems("KillEffects", selected)
+            if selected[1] then ArsenalAdapter:SetKillEffect(selected[1]) end
         end
     })
     SkinSection:Dropdown({
-        Name = "Announcer",
+        Name = "Announcers",
         Flag = "ArsenalAnnouncer",
-        Default = nil,
+        Multi = true,
         Items = ArsenalAdapter:GetItemNames("Announcers"),
         Callback = function(Value)
-            if Value == nil then return end
-            ArsenalAdapter:SetAnnouncer(Value)
+            local selected = {}
+            for name, state in next, Value do
+                if state then table.insert(selected, name) end
+            end
+            ArsenalAdapter:SetSelectedItems("Announcers", selected)
+            if selected[1] then ArsenalAdapter:SetAnnouncer(selected[1]) end
         end
     })
     SkinSection:Dropdown({
-        Name = "Character Skin",
+        Name = "Character Skins",
         Flag = "ArsenalCharSkin",
-        Default = nil,
+        Multi = true,
         Items = ArsenalAdapter:GetItemNames("Skins"),
         Callback = function(Value)
-            if Value == nil then return end
-            ArsenalAdapter:SetCharacterSkin(Value)
+            local selected = {}
+            for name, state in next, Value do
+                if state then table.insert(selected, name) end
+            end
+            ArsenalAdapter:SetSelectedItems("Skins", selected)
+            if selected[1] then ArsenalAdapter:SetCharacterSkin(selected[1]) end
         end
     })
 end
