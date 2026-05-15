@@ -36,7 +36,7 @@ local ESPSection = VisualsTab:Section({Name = "ESP", Side = 1})
 -- ESP Toggles with Colorpickers
 ESPSection:Toggle({Name = "Masterswitch", Flag = "ESPEnabled", Default = false, Callback = function(Value)
     ESP:Toggle(Value)
-end}):Colorpicker({Name = "", Flag = "ESPColor", Default = Color3.fromRGB(255, 0, 0)})
+end})
 
 ESPSection:Toggle({Name = "Box", Flag = "ESPBox", Default = false, Callback = function(Value)
     ESP:SetSetting("Box", Value)
@@ -61,6 +61,7 @@ NameTypeDropdown = ESPSection:Dropdown({Name = "Name Type", Flag = "ESPNameType"
     end
     ESP:SetSetting("NameType", Value)
 end})
+NameTypeDropdown:SetVisibility(false)
 
 ESPSection:Toggle({Name = "Health-bar", Flag = "ESPHealthBar", Default = false, Callback = function(Value)
     ESP:SetSetting("HealthBar", Value)
@@ -86,10 +87,16 @@ end}):Colorpicker({Name = "", Flag = "ESPSkeletonColor", Default = Color3.fromRG
     ESP:SetSetting("SkeletonColor", Value)
 end})
 
-ESPSection:Toggle({Name = "Chams", Flag = "ESPChams", Default = false, Callback = function(Value)
+ESPSection:Toggle({Name = "Highlight", Flag = "ESPChams", Default = false, Callback = function(Value)
     ESP:SetSetting("Chams", Value)
 end}):Colorpicker({Name = "", Flag = "ESPChamsColor", Default = Color3.fromRGB(255, 0, 0), Callback = function(Value)
     ESP:SetSetting("ChamsColor", Value)
+end})
+
+ESPSection:Toggle({Name = "Highlight Outline", Flag = "ESPChamsOutline", Default = false, Callback = function(Value)
+    ESP:SetSetting("ChamsOutline", Value)
+end}):Colorpicker({Name = "", Flag = "ESPChamsOutlineColor", Default = Color3.fromRGB(255, 255, 255), Callback = function(Value)
+    ESP:SetSetting("ChamsOutlineColor", Value)
 end})
 
 ESPSection:Toggle({Name = "Equipped Tool", Flag = "ESPTool", Default = false, Callback = function(Value)
@@ -119,7 +126,7 @@ OptionsSection:Toggle({Name = "Occluded-check", Flag = "ESPOccluded", Default = 
     ESP:SetSetting("VisibleOnly", Value)
 end})
 
-OptionsSection:Toggle({Name = "Enemy Only", Flag = "ESPEnemyOnly", Default = true, Callback = function(Value)
+OptionsSection:Toggle({Name = "Team Check", Flag = "Team Check", Default = true, Callback = function(Value)
     ESP:SetSetting("TeamCheck", Value)
 end})
 
