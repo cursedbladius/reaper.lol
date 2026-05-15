@@ -29,6 +29,7 @@ ESP.Settings = {
     Chams = false,
     ChamsColor = Color3.fromRGB(255, 0, 0),
     ChamsOutlineColor = Color3.fromRGB(255, 255, 255),
+    ChamsOutline = false,
     Tool = false,
     ToolColor = Color3.fromRGB(255, 255, 255),
     MaxDistance = 1000,
@@ -582,6 +583,7 @@ local function UpdateESP()
 
             obj.Highlight.FillColor = ESP.Settings.ChamsColor
             obj.Highlight.OutlineColor = ESP.Settings.ChamsOutlineColor
+            obj.Highlight.OutlineTransparency = ESP.Settings.ChamsOutline and 0 or 1
             obj.Highlight.Enabled = true
         else
             if obj.Highlight then
