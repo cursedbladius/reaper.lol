@@ -14,7 +14,9 @@ GameRegistry:Register(2788229376, DaHoodAdapter)
 GameRegistry:Register(15169303036, CriminalityAdapter)
 GameRegistry:Register(1494262959, CriminalityAdapter)
 
-ToolModifier:Initialize(GameRegistry:Get())
+local _adapter = GameRegistry:Get()
+warn("[ToolMod] PlaceId:", game.PlaceId, "| GameId:", game.GameId, "| Adapter:", _adapter and "FOUND" or "NIL")
+ToolModifier:Initialize(_adapter)
 
 local Window = Library:Window({
     Name = "reaper.lol",
