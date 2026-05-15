@@ -139,23 +139,29 @@ local ToolModifierAlpha = 0
 local ToolModifierMaterial = "Default"
 local CurrentTool = nil
 
-local MaterialMap = {
-    ["Default"] = nil,
-    ["ForceField"] = Enum.Material.ForceField,
-}
-
 local ToolHighlight = nil
-local ToolOriginalMaterials = {}
+local ToolPartData = {}
 
 local function ResetToolModifier()
+    -- Destroy highlight
     if ToolHighlight then
         pcall(function() ToolHighlight:Destroy() end)
         ToolHighlight = nil
     end
-    for part, mat in pairs(ToolOriginalMaterials) do
-        pcall(function() part.Material = mat end)
+    -- Restore all parts
+    for part, data in pairs(ToolPartData) do
+        pcall(function()
+            part.Material = data.Material
+            part.Color = data.Color
+            if data.TextureID ~= nil then
+                part.TextureID = data.TextureID
+            end
+            for _, sa in ipairs(data.SurfaceAppearances) do
+                sa.Parent = part
+            end
+        end)
     end
-    ToolOriginalMaterials = {}
+    ToolPartData = {}
     CurrentTool = nil
 end
 
@@ -164,9 +170,7 @@ local function ApplyToolModifier()
     if not character then return end
     local tool = character:FindFirstChildOfClass("Tool")
     if not tool then
-        if ToolHighlight then
-            ToolHighlight.Enabled = false
-        end
+        if ToolHighlight then ToolHighlight.Enabled = false end
         return
     end
 
@@ -176,8 +180,10 @@ local function ApplyToolModifier()
         CurrentTool = tool
     end
 
-    -- Handle Highlight for color tinting
-    if ToolModifierMaterial ~= "ForceField" then
+    local isMaterial = (ToolModifierMaterial == "ForceField" or ToolModifierMaterial == "Neon")
+
+    -- Highlight only for Default mode (no material override)
+    if not isMaterial then
         if not ToolHighlight or not ToolHighlight.Parent then
             ToolHighlight = Instance.new("Highlight")
             ToolHighlight.OutlineTransparency = 1
@@ -185,19 +191,75 @@ local function ApplyToolModifier()
         end
         ToolHighlight.Adornee = tool
         ToolHighlight.FillColor = ToolModifierColor
-        ToolHighlight.FillTransparency = 1 - ToolModifierAlpha
+        ToolHighlight.FillTransparency = ToolModifierAlpha
         ToolHighlight.Enabled = true
     else
         if ToolHighlight then
             ToolHighlight.Enabled = false
         end
-        -- Apply ForceField material to all visible parts
-        for _, part in ipairs(tool:GetDescendants()) do
-            if part:IsA("BasePart") and part.Transparency < 1 then
-                if not ToolOriginalMaterials[part] then
-                    ToolOriginalMaterials[part] = part.Material
+    end
+
+    -- Apply material changes to parts
+    for _, part in ipairs(tool:GetDescendants()) do
+        if part:IsA("BasePart") and part.Transparency < 1 then
+            -- Store originals once
+            if not ToolPartData[part] then
+                local removables = {}
+                local specialMesh = nil
+                local specialMeshTexture = nil
+                for _, child in ipairs(part:GetChildren()) do
+                    if child:IsA("SurfaceAppearance") then
+                        table.insert(removables, child)
+                    end
+                    if child:IsA("SpecialMesh") then
+                        specialMesh = child
+                        specialMeshTexture = child.TextureId
+                    end
                 end
-                part.Material = Enum.Material.ForceField
+                ToolPartData[part] = {
+                    Material = part.Material,
+                    Color = part.Color,
+                    TextureID = part:IsA("MeshPart") and part.TextureID or nil,
+                    Removables = removables,
+                    SpecialMesh = specialMesh,
+                    SpecialMeshTexture = specialMeshTexture
+                }
+            end
+
+            if isMaterial then
+                -- Set material + color
+                part.Color = ToolModifierColor
+                part.Material = (ToolModifierMaterial == "ForceField") and Enum.Material.ForceField or Enum.Material.Neon
+                -- Remove SurfaceAppearance so material shows
+                for _, obj in ipairs(ToolPartData[part].Removables) do
+                    pcall(function() obj.Parent = nil end)
+                end
+                -- Clear MeshPart texture
+                pcall(function()
+                    if part:IsA("MeshPart") then
+                        part.TextureID = ""
+                    end
+                end)
+                -- Clear SpecialMesh texture
+                if ToolPartData[part].SpecialMesh then
+                    pcall(function() ToolPartData[part].SpecialMesh.TextureId = "" end)
+                end
+            else
+                -- Default: restore original material/texture, rely on Highlight for color
+                local data = ToolPartData[part]
+                part.Material = data.Material
+                part.Color = data.Color
+                pcall(function()
+                    if part:IsA("MeshPart") and data.TextureID ~= nil then
+                        part.TextureID = data.TextureID
+                    end
+                end)
+                if data.SpecialMesh and data.SpecialMeshTexture then
+                    pcall(function() data.SpecialMesh.TextureId = data.SpecialMeshTexture end)
+                end
+                for _, obj in ipairs(data.Removables) do
+                    pcall(function() if not obj.Parent then obj.Parent = part end end)
+                end
             end
         end
     end
@@ -218,7 +280,7 @@ ToolMaterialDropdown = ExtrasSection:Dropdown({
     Name = "Tool Material",
     Flag = "ToolModifierMaterial",
     Default = "Default",
-    Items = {"Default", "ForceField"},
+    Items = {"Default", "ForceField", "Neon"},
     Callback = function(Value)
         if Value == nil then
             ToolMaterialDropdown:Set("Default")
@@ -226,11 +288,19 @@ ToolMaterialDropdown = ExtrasSection:Dropdown({
         end
         ToolModifierMaterial = Value
         if Value == "Default" and ToolModifierEnabled then
-            -- Restore ForceField materials back to original
-            for part, mat in pairs(ToolOriginalMaterials) do
-                pcall(function() part.Material = mat end)
+            -- Restore materials/textures immediately
+            for part, data in pairs(ToolPartData) do
+                pcall(function()
+                    part.Material = data.Material
+                    part.Color = data.Color
+                    if part:IsA("MeshPart") and data.TextureID ~= nil then
+                        part.TextureID = data.TextureID
+                    end
+                    for _, sa in ipairs(data.SurfaceAppearances) do
+                        if not sa.Parent then sa.Parent = part end
+                    end
+                end)
             end
-            ToolOriginalMaterials = {}
         end
     end
 })
