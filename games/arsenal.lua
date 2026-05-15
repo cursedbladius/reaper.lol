@@ -509,60 +509,25 @@ end
 function Arsenal:GetToolTargets(playerName)
     local targets = {}
 
-    local wrapName = "HWRAP_" .. playerName
-    local wrap = nil
-    for _, child in pairs(workspace:GetChildren()) do
-        if child.Name == wrapName then
-            wrap = child
-            break
-        end
-    end
-    if wrap then
-        for _, child in pairs(wrap:GetChildren()) do
-            if child.Name == "Gun" then
-                table.insert(targets, child)
-                break
-            end
-        end
-    end
-
     pcall(function()
-        local localPlayer = game:GetService("Players").LocalPlayer
-        local nrpbs = nil
-        for _, child in pairs(localPlayer:GetChildren()) do
-            if child.Name == "NRPBS" then nrpbs = child break end
-        end
-        if not nrpbs then return end
-
-        local equippedTool = nil
-        for _, child in pairs(nrpbs:GetChildren()) do
-            if child.Name == "EquippedTool" then equippedTool = child break end
-        end
-        if not equippedTool then return end
-
-        local toolName = ""
-        if typeof(equippedTool.Value) == "string" then
-            toolName = equippedTool.Value
-        elseif typeof(equippedTool.Value) == "Instance" then
-            toolName = equippedTool.Value.Name
-        end
-        if toolName == "" then return end
-
-        local weapons = nil
-        for _, child in pairs(game:GetService("ReplicatedStorage"):GetChildren()) do
-            if child.Name == "Weapons" then weapons = child break end
-        end
-        if not weapons then return end
-
-        for _, child in pairs(weapons:GetChildren()) do
-            if child.Name == toolName then
+        local wrapName = "HWRAP_" .. playerName
+        for _, child in pairs(workspace:GetChildren()) do
+            if child.Name == wrapName then
                 for _, sub in pairs(child:GetChildren()) do
-                    if sub.Name == "Model" then
+                    if sub:IsA("Model") or sub:IsA("BasePart") then
                         table.insert(targets, sub)
-                        break
                     end
                 end
                 break
+            end
+        end
+    end)
+
+    pcall(function()
+        local camera = workspace.CurrentCamera
+        for _, child in pairs(camera:GetChildren()) do
+            if child:IsA("Model") then
+                table.insert(targets, child)
             end
         end
     end)
