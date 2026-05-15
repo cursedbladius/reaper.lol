@@ -1,10 +1,10 @@
 local LoadStart = os.clock()
 local Library = loadstring(game:HttpGet("https://reaper-lol.pages.dev/ui/library.lua"))()
 
-local ESP = loadstring(game:HttpGet("https://reaper-lol.pages.dev/features/Visuals/esp.lua"))()
+local ESP = loadstring(game:HttpGet("https://reaper-lol.pages.dev/features/visuals/esp.lua"))()
 ESP:Initialize()
 
-local ToolModifier = loadstring(game:HttpGet("https://reaper-lol.pages.dev/features/Visuals/tool_modifier.lua"))()
+local ToolModifier = loadstring(game:HttpGet("https://reaper-lol.pages.dev/features/visuals/tool_modifier.lua"))()
 
 local GameRegistry = loadstring(game:HttpGet("https://reaper-lol.pages.dev/games/registry.lua"))()
 local DaHoodAdapter = loadstring(game:HttpGet("https://reaper-lol.pages.dev/games/da_hood.lua"))()
