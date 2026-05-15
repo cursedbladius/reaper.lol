@@ -170,6 +170,28 @@ local function IsEnemy(player)
     return player.Team ~= LocalPlayer.Team
 end
 
+-- Occlusion check via raycast
+local RaycastParams = RaycastParams.new()
+RaycastParams.FilterType = Enum.RaycastFilterType.Exclude
+
+local function IsVisible(character, hrp)
+    local origin = Camera.CFrame.Position
+    local target = hrp.Position
+    local direction = (target - origin)
+
+    -- Exclude local player's character and the target character from the ray
+    local filterInstances = {character}
+    local localChar = LocalPlayer.Character
+    if localChar then
+        table.insert(filterInstances, localChar)
+    end
+
+    RaycastParams.FilterDescendantsInstances = filterInstances
+
+    local result = workspace:Raycast(origin, direction, RaycastParams)
+    return result == nil
+end
+
 -- Main update loop
 local function UpdateESP()
     Camera = workspace.CurrentCamera
@@ -202,6 +224,12 @@ local function UpdateESP()
 
         -- Team check
         if not IsEnemy(player) then
+            HideESPObject(obj)
+            continue
+        end
+
+        -- Occlusion check (VisibleOnly = show only non-occluded players)
+        if ESP.Settings.VisibleOnly and not IsVisible(character, hrp) then
             HideESPObject(obj)
             continue
         end
