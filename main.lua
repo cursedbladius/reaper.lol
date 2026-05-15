@@ -43,7 +43,7 @@ local TargetAimSection = CombatTab:Section({Name = "Target Aim", Side = 2})
 local WeaponModsSection = CombatTab:Section({Name = "Weapon Mods", Side = 2})
 
 local PlayersSubTab = VisualsTab:SubPage({Icon = "115398113982385", Columns = 2})
-local GeneralSubTab = VisualsTab:SubPage({Icon = "136372617578355", Columns = 2})
+local GeneralSubTab = VisualsTab:SubPage({Icon = "99244790601968", Columns = 2})
 
 local ESPSection = PlayersSubTab:Section({Name = "ESP", Side = 1})
 

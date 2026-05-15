@@ -2820,7 +2820,19 @@ local Library do
                 Items["MainFrame"].Instance.Visible = true
             end
 
-            local Descendants = Items["MainFrame"].Instance:GetDescendants()
+            local Descendants = {}
+            local function collectVisible(parent)
+                for _, child in pairs(parent:GetChildren()) do
+                    if child.Visible == false and child:IsA("ScrollingFrame") then
+                        continue
+                    end
+                    TableInsert(Descendants, child)
+                    if child.Visible ~= false then
+                        collectVisible(child)
+                    end
+                end
+            end
+            collectVisible(Items["MainFrame"].Instance)
             TableInsert(Descendants, Items["MainFrame"].Instance)
 
             local NewTween
@@ -2840,10 +2852,15 @@ local Library do
                 end
             end
 
-            NewTween.Tween.Completed:Once(function()
+            if NewTween then
+                NewTween.Tween.Completed:Once(function()
+                    Debounce = false
+                    Items["MainFrame"].Instance.Visible = Bool
+                end)
+            else
                 Debounce = false
                 Items["MainFrame"].Instance.Visible = Bool
-            end)
+            end
         end
 
         Library:Connect(UserInputService.InputBegan, function(Input)
@@ -3078,7 +3095,17 @@ local Library do
                 Items["Text"]:ChangeItemTheme({TextColor3 = "Text"})
             end
 
-            local Descendants = Items["Page"].Instance:GetDescendants()
+            local Descendants = {}
+            for _, child in pairs(Items["Page"].Instance:GetChildren()) do
+                TableInsert(Descendants, child)
+                if child.Visible ~= false then
+                    for _, desc in pairs(child:GetDescendants()) do
+                        if not desc:IsA("ScrollingFrame") or desc.Visible ~= false then
+                            TableInsert(Descendants, desc)
+                        end
+                    end
+                end
+            end
             TableInsert(Descendants, Items["Page"].Instance)
 
             local NewTween
@@ -3098,10 +3125,15 @@ local Library do
                 end
             end
 
-            NewTween.Tween.Completed:Once(function()
+            if NewTween then
+                NewTween.Tween.Completed:Once(function()
+                    Debounce = false
+                    Items["Page"].Instance.Visible = Bool
+                end)
+            else
                 Debounce = false
                 Items["Page"].Instance.Visible = Bool
-            end)
+            end
         end
 
         Items["Inactive"]:Connect("MouseButton1Down", function()
@@ -3310,7 +3342,17 @@ local Library do
                 Items["Inactive"].Instance.Size = UDim2New(1, 0, 1, -2)
             end
 
-            local Descendants = Items["Subtab"].Instance:GetDescendants()
+            local Descendants = {}
+            for _, child in pairs(Items["Subtab"].Instance:GetChildren()) do
+                TableInsert(Descendants, child)
+                if child.Visible ~= false then
+                    for _, desc in pairs(child:GetDescendants()) do
+                        if not desc:IsA("ScrollingFrame") or desc.Visible ~= false then
+                            TableInsert(Descendants, desc)
+                        end
+                    end
+                end
+            end
             TableInsert(Descendants, Items["Subtab"].Instance)
 
             local NewTween
@@ -3330,10 +3372,15 @@ local Library do
                 end
             end
 
-            NewTween.Tween.Completed:Once(function()
+            if NewTween then
+                NewTween.Tween.Completed:Once(function()
+                    Debounce = false
+                    Items["Subtab"].Instance.Visible = Bool
+                end)
+            else
                 Debounce = false
                 Items["Subtab"].Instance.Visible = Bool
-            end)
+            end
         end
 
         Items["Inactive"]:Connect("MouseButton1Down", function()
