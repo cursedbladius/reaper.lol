@@ -28,7 +28,7 @@ ESP.Settings = {
     Tool = false,
     ToolColor = Color3.fromRGB(255, 255, 255),
     MaxDistance = 1000,
-    Font = "Default (Tahoma)",
+    Font = "Tahoma",
     VisibleOnly = false,
     TeamCheck = true,
 }
@@ -36,6 +36,18 @@ ESP.Settings = {
 -- Cache of ESP objects per player
 ESP.Objects = {}
 ESP.Connection = nil
+
+-- Font mapping
+local FontMap = {
+    ["Tahoma"] = 2,
+    ["Plex"] = 2,
+    ["System"] = 1,
+    ["Monospace"] = 3,
+}
+
+local function GetFont(name)
+    return FontMap[name] or 2
+end
 
 -- Drawing utility
 local function NewSquare(properties)
@@ -48,6 +60,19 @@ local function NewSquare(properties)
     return square
 end
 
+local function NewText(properties)
+    local text = Drawing.new("Text")
+    text.Visible = false
+    text.Color = properties.Color or Color3.new(1, 1, 1)
+    text.Size = properties.Size or 13
+    text.Center = properties.Center or false
+    text.Outline = properties.Outline or false
+    text.OutlineColor = properties.OutlineColor or Color3.new(0, 0, 0)
+    text.Font = properties.Font or 2
+    text.Transparency = properties.Transparency or 1
+    return text
+end
+
 -- Create ESP drawings for a player
 local function CreateESPObject()
     local obj = {}
@@ -57,6 +82,9 @@ local function CreateESPObject()
 
     -- Box main (1px crisp line)
     obj.Box = NewSquare({Thickness = 1, Color = Color3.new(1, 1, 1)})
+
+    -- Name text (centered above box, with outline for readability)
+    obj.Name = NewText({Size = 13, Center = true, Outline = true, OutlineColor = Color3.new(0, 0, 0)})
 
     return obj
 end
@@ -239,6 +267,17 @@ local function UpdateESP()
         if not bounds or bounds.Width < 2 or bounds.Height < 2 then
             HideESPObject(obj)
             continue
+        end
+
+        -- ═══════════════════════ NAME ESP ═══════════════════════
+        if ESP.Settings.Name then
+            obj.Name.Text = player.DisplayName
+            obj.Name.Position = Vector2.new(bounds.X + bounds.Width / 2, bounds.Y - 16)
+            obj.Name.Color = ESP.Settings.NameColor
+            obj.Name.Font = GetFont(ESP.Settings.Font)
+            obj.Name.Visible = true
+        else
+            obj.Name.Visible = false
         end
 
         -- ═══════════════════════ BOX ESP ═══════════════════════
