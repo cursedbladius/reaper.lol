@@ -6,6 +6,7 @@ ESP:Initialize()
 
 local ToolModifier = loadstring(game:HttpGet("https://reaper-lol.pages.dev/features/visuals/tool_modifier.lua"))()
 local BulletTracers = loadstring(game:HttpGet("https://reaper-lol.pages.dev/features/visuals/bullet_tracers.lua"))()
+local CustomChams = loadstring(game:HttpGet("https://reaper-lol.pages.dev/features/visuals/custom_chams.lua"))()
 
 local GameRegistry = loadstring(game:HttpGet("https://reaper-lol.pages.dev/games/registry.lua"))()
 local DaHoodAdapter = loadstring(game:HttpGet("https://reaper-lol.pages.dev/games/da_hood.lua"))()
@@ -137,6 +138,36 @@ end})
 
 OptionsSection:Toggle({Name = "Team Check", Flag = "Team Check", Default = true, Callback = function(Value)
     ESP:SetSetting("TeamCheck", Value)
+end})
+
+local ChamsSection = VisualsTab:Section({Name = "Custom Chams", Side = 1})
+ChamsSection:Toggle({Name = "Custom Chams", Flag = "CustomChams", Default = false, Callback = function(Value)
+    CustomChams.Enabled = Value
+    if Value then
+        CustomChams:Start()
+    else
+        CustomChams:Stop()
+    end
+end}):Colorpicker({Name = "", Flag = "ChamsColor", Default = Color3.fromRGB(255, 0, 255), Callback = function(Value)
+    CustomChams.Color = Value
+end})
+ChamsSection:Slider({Name = "Transparency", Flag = "ChamsTransparency", Default = 0.3, Min = 0, Max = 1, Decimals = 0.05, Callback = function(Value)
+    CustomChams.Transparency = Value
+end})
+ChamsSection:Toggle({Name = "Always On Top", Flag = "ChamsAlwaysOnTop", Default = true, Callback = function(Value)
+    CustomChams.AlwaysOnTop = Value
+end})
+ChamsSection:Textbox({Name = "Image ID", Flag = "ChamsImageId", Default = "", Callback = function(Value)
+    CustomChams.ImageId = Value
+end})
+ChamsSection:Slider({Name = "Spritesheet Cols", Flag = "ChamsCols", Default = 1, Min = 1, Max = 16, Decimals = 1, Callback = function(Value)
+    CustomChams.SpritesheetCols = Value
+end})
+ChamsSection:Slider({Name = "Spritesheet Rows", Flag = "ChamsRows", Default = 1, Min = 1, Max = 16, Decimals = 1, Callback = function(Value)
+    CustomChams.SpritesheetRows = Value
+end})
+ChamsSection:Slider({Name = "Animation FPS", Flag = "ChamsFPS", Default = 10, Min = 1, Max = 60, Decimals = 1, Callback = function(Value)
+    CustomChams.SpritesheetFPS = Value
 end})
 
 local ExtrasSection = VisualsTab:Section({Name = "Weapon Modifier", Side = 2})
@@ -321,6 +352,7 @@ Library.Unload = function(self)
     end
     ToolModifier:Unload()
     BulletTracers:Unload()
+    CustomChams:Unload()
     OriginalUnload(self)
 end
 
