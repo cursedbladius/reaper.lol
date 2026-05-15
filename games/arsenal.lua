@@ -87,7 +87,15 @@ function Arsenal:GetAllCategories()
     return categories
 end
 
-function Arsenal:UnlockAll()
+Arsenal._unlockConnection = nil
+
+function Arsenal:UnlockAll(enabled)
+    if self._unlockConnection then
+        self._unlockConnection:Disconnect()
+        self._unlockConnection = nil
+    end
+    if not enabled then return end
+
     local repStorage = game:GetService("ReplicatedStorage")
     local itemData = nil
     for _, child in pairs(repStorage:GetChildren()) do
@@ -100,30 +108,30 @@ function Arsenal:UnlockAll()
     end
     if not images then warn("[Arsenal] Images not found") return end
 
-    local inventoryData = nil
-    for _, v in next, getgc(true) do
-        if typeof(v) == "table" and rawget(v, "Loadout") and typeof(rawget(v, "Items")) == "table" then
-            inventoryData = rawget(v, "Items")
-            break
+    local function doUnlock()
+        local inventoryData = nil
+        for _, v in next, getgc(true) do
+            if typeof(v) == "table" and rawget(v, "Loadout") and typeof(rawget(v, "Items")) == "table" then
+                inventoryData = rawget(v, "Items")
+                break
+            end
         end
-    end
-    if not inventoryData then
-        warn("[Arsenal] Could not find inventory table via getgc")
-        return
-    end
+        if not inventoryData then return end
 
-    local count = 0
-    for _, category in next, images:GetChildren() do
-        if inventoryData[category.Name] then
-            for _, item in next, category:GetChildren() do
-                if not inventoryData[category.Name][item.Name] then
-                    inventoryData[category.Name][item.Name] = 1
-                    count = count + 1
+        for _, category in next, images:GetChildren() do
+            if inventoryData[category.Name] then
+                for _, item in next, category:GetChildren() do
+                    if not inventoryData[category.Name][item.Name] then
+                        inventoryData[category.Name][item.Name] = 1
+                    end
                 end
             end
         end
     end
-    warn("[Arsenal] Unlocked", count, "items")
+
+    doUnlock()
+    self._unlockConnection = game:GetService("RunService").Heartbeat:Connect(doUnlock)
+    warn("[Arsenal] Unlock All active")
 end
 
 function Arsenal:SetMeleeSkin(skinName)
@@ -160,7 +168,45 @@ function Arsenal:SetGunSkin(skinName)
     end)
 end
 
+Arsenal._killEffectHooked = false
+Arsenal._equippedKillEffect = nil
+
+function Arsenal:HookKillEffect()
+    if self._killEffectHooked then return end
+
+    local effectFunc = nil
+    for _, v in next, getgc() do
+        if typeof(v) == "function" and islclosure(v) then
+            local info = debug.info(v, "l")
+            if info == 54994 then
+                effectFunc = v
+                break
+            end
+        end
+    end
+
+    if not effectFunc then
+        warn("[Arsenal] Could not find kill effect function")
+        return
+    end
+
+    local playerName = game:GetService("Players").LocalPlayer.Name
+    local original
+    original = hookfunction(effectFunc, newcclosure(function(...)
+        local args = {...}
+        if args[11] and tostring(args[11]):find(playerName) then
+            if Arsenal._equippedKillEffect then
+                args[12] = Arsenal._equippedKillEffect
+            end
+        end
+        return original(unpack(args))
+    end))
+    self._killEffectHooked = true
+    warn("[Arsenal] Kill effect hook active")
+end
+
 function Arsenal:SetKillEffect(effectName)
+    self._equippedKillEffect = effectName
     pcall(function()
         game:GetService("Players").LocalPlayer.Data.KillEffect.Value = effectName
     end)
@@ -175,6 +221,7 @@ function Arsenal:SetKillEffect(effectName)
             end
         end
     end)
+    self:HookKillEffect()
 end
 
 function Arsenal:SetAnnouncer(announcerName)

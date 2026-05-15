@@ -200,7 +200,7 @@ if game.GameId == 111958650 or game.PlaceId == 286090429 then
 
     local SkinSection = VisualsTab:Section({Name = "Skin-Changer", Side = 1})
     SkinSection:Toggle({Name = "Unlock All Items", Flag = "ArsenalUnlockAll", Default = false, Callback = function(Value)
-        if Value then ArsenalAdapter:UnlockAll() end
+        ArsenalAdapter:UnlockAll(Value)
     end})
     SkinSection:Dropdown({
         Name = "Melee Skin",
