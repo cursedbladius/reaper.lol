@@ -1897,14 +1897,21 @@ local Library do
             self:Update(true)
         end
 
-        Items["ColorpickerButton"]:Connect("MouseButton1Down", function()
-            Colorpicker:SetOpen(not Colorpicker.IsOpen)
-        end)
-
-        -- Right-click context menu
+        -- Combined input handler for both left and right click
         local ContextMenu = nil
         
         Items["ColorpickerButton"]:Connect("InputBegan", function(Input)
+            -- Left click - toggle color picker
+            if Input.UserInputType == Enum.UserInputType.MouseButton1 then
+                if ContextMenu and ContextMenu.Instance then
+                    ContextMenu:Clean()
+                    ContextMenu = nil
+                end
+                Colorpicker:SetOpen(not Colorpicker.IsOpen)
+                return
+            end
+            
+            -- Right click - show context menu
             if Input.UserInputType ~= Enum.UserInputType.MouseButton2 then
                 return
             end
@@ -1948,22 +1955,34 @@ local Library do
                     end
                 end},
                 {Name = "Paste", Callback = function()
-                    if getclipboard then
-                        local clipboard = getclipboard()
-                        if clipboard then
-                            -- Try hex format first (with or without #)
-                            local hex = clipboard:match("#?([0-9A-Fa-f]{6})")
-                            if hex then
-                                Colorpicker:Set(FromHex(hex))
-                            else
-                                -- Try Color3 format: "R, G, B" or "R G B"
-                                local r, g, b = clipboard:match("(%d+)[, ]+(%d+)[, ]+(%d+)")
+                    local success, result = pcall(function()
+                        if getclipboard then
+                            local clipboard = getclipboard()
+                            if clipboard and #clipboard > 0 then
+                                -- Trim whitespace
+                                clipboard = clipboard:gsub("^%s*(.-)%s*$", "%1")
+                                
+                                -- Try hex format first (with or without #)
+                                local hex = clipboard:match("^#?([0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f])$")
+                                if hex then
+                                    Colorpicker:Set(FromHex(hex))
+                                    return
+                                end
+                                
+                                -- Try Color3 format: "255, 0, 0" or "255 0 0"
+                                local r, g, b = clipboard:match("^(%d+)%D+(%d+)%D+(%d+)$")
                                 if r and g and b then
-                                    Colorpicker:Set(Color3.fromRGB(tonumber(r), tonumber(g), tonumber(b)))
+                                    Colorpicker:Set(FromRGB(tonumber(r), tonumber(g), tonumber(b)))
+                                    return
                                 end
                             end
                         end
+                    end)
+                    
+                    if not success then
+                        warn("Paste failed:", result)
                     end
+                    
                     if ContextMenu then
                         ContextMenu:Clean()
                         ContextMenu = nil
