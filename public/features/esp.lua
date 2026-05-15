@@ -465,40 +465,87 @@ local function UpdateESP()
                     {"RightLowerLeg", "RightFoot"},
                 }
             else
-                bones = {
-                    {"Head", "Torso"},
-                    {"Torso", "Left Arm"},
-                    {"Torso", "Right Arm"},
-                    {"Torso", "Left Leg"},
-                    {"Torso", "Right Leg"},
-                }
+                -- R6: compute joint positions manually for a proper stick figure
+                local head = character:FindFirstChild("Head")
+                local torso = character:FindFirstChild("Torso")
+                local lArm = character:FindFirstChild("Left Arm")
+                local rArm = character:FindFirstChild("Right Arm")
+                local lLeg = character:FindFirstChild("Left Leg")
+                local rLeg = character:FindFirstChild("Right Leg")
+
+                if head and torso then
+                    local torsoTop = (torso.CFrame * CFrame.new(0, 1, 0)).Position
+                    local torsoBot = (torso.CFrame * CFrame.new(0, -1, 0)).Position
+
+                    -- Head → Torso top (neck)
+                    bones[#bones + 1] = {head.Position, torsoTop}
+                    -- Torso spine
+                    bones[#bones + 1] = {torsoTop, torsoBot}
+
+                    if lArm and rArm then
+                        local lArmTop = (lArm.CFrame * CFrame.new(0, 1, 0)).Position
+                        local rArmTop = (rArm.CFrame * CFrame.new(0, 1, 0)).Position
+                        local lArmBot = (lArm.CFrame * CFrame.new(0, -1, 0)).Position
+                        local rArmBot = (rArm.CFrame * CFrame.new(0, -1, 0)).Position
+
+                        -- Shoulder line
+                        bones[#bones + 1] = {lArmTop, rArmTop}
+                        -- Left arm
+                        bones[#bones + 1] = {lArmTop, lArmBot}
+                        -- Right arm
+                        bones[#bones + 1] = {rArmTop, rArmBot}
+                    end
+
+                    if lLeg and rLeg then
+                        local lLegTop = (lLeg.CFrame * CFrame.new(0, 1, 0)).Position
+                        local rLegTop = (rLeg.CFrame * CFrame.new(0, 1, 0)).Position
+                        local lLegBot = (lLeg.CFrame * CFrame.new(0, -1, 0)).Position
+                        local rLegBot = (rLeg.CFrame * CFrame.new(0, -1, 0)).Position
+
+                        -- Hip diagonals
+                        bones[#bones + 1] = {torsoBot, lLegTop}
+                        bones[#bones + 1] = {torsoBot, rLegTop}
+                        -- Legs
+                        bones[#bones + 1] = {lLegTop, lLegBot}
+                        bones[#bones + 1] = {rLegTop, rLegBot}
+                    end
+                end
             end
 
             local boneIndex = 0
             for _, bone in ipairs(bones) do
-                local partA = character:FindFirstChild(bone[1])
-                local partB = character:FindFirstChild(bone[2])
+                local worldA, worldB
 
-                if partA and partB then
-                    local posA, visA = Camera:WorldToViewportPoint(partA.Position)
-                    local posB, visB = Camera:WorldToViewportPoint(partB.Position)
+                -- R15 uses part name pairs, R6 uses pre-computed Vector3 pairs
+                if type(bone[1]) == "string" then
+                    local partA = character:FindFirstChild(bone[1])
+                    local partB = character:FindFirstChild(bone[2])
+                    if not partA or not partB then continue end
+                    worldA = partA.Position
+                    worldB = partB.Position
+                else
+                    worldA = bone[1]
+                    worldB = bone[2]
+                end
 
-                    if visA and visB then
-                        boneIndex = boneIndex + 1
-                        local from = Vector2.new(posA.X, posA.Y)
-                        local to = Vector2.new(posB.X, posB.Y)
+                local posA, visA = Camera:WorldToViewportPoint(worldA)
+                local posB, visB = Camera:WorldToViewportPoint(worldB)
 
-                        -- Outline
-                        obj.SkeletonOutlines[boneIndex].From = from
-                        obj.SkeletonOutlines[boneIndex].To = to
-                        obj.SkeletonOutlines[boneIndex].Visible = true
+                if visA and visB then
+                    boneIndex = boneIndex + 1
+                    local from = Vector2.new(posA.X, posA.Y)
+                    local to = Vector2.new(posB.X, posB.Y)
 
-                        -- Colored line
-                        obj.SkeletonLines[boneIndex].From = from
-                        obj.SkeletonLines[boneIndex].To = to
-                        obj.SkeletonLines[boneIndex].Color = ESP.Settings.SkeletonColor
-                        obj.SkeletonLines[boneIndex].Visible = true
-                    end
+                    -- Outline
+                    obj.SkeletonOutlines[boneIndex].From = from
+                    obj.SkeletonOutlines[boneIndex].To = to
+                    obj.SkeletonOutlines[boneIndex].Visible = true
+
+                    -- Colored line
+                    obj.SkeletonLines[boneIndex].From = from
+                    obj.SkeletonLines[boneIndex].To = to
+                    obj.SkeletonLines[boneIndex].Color = ESP.Settings.SkeletonColor
+                    obj.SkeletonLines[boneIndex].Visible = true
                 end
             end
 
