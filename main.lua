@@ -5,6 +5,7 @@ local ESP = loadstring(game:HttpGet("https://reaper-lol.pages.dev/features/visua
 ESP:Initialize()
 
 local ToolModifier = loadstring(game:HttpGet("https://reaper-lol.pages.dev/features/visuals/tool_modifier.lua"))()
+local ParticleAura = loadstring(game:HttpGet("https://reaper-lol.pages.dev/features/visuals/particle_aura.lua"))()
 
 local GameRegistry = loadstring(game:HttpGet("https://reaper-lol.pages.dev/games/registry.lua"))()
 local DaHoodAdapter = loadstring(game:HttpGet("https://reaper-lol.pages.dev/games/da_hood.lua"))()
@@ -182,6 +183,25 @@ game:GetService("RunService").RenderStepped:Connect(function()
         ToolModifier:Apply()
     end
 end)
+
+local ParticleSection = VisualsTab:Section({Name = "Particle Aura", Side = 2})
+ParticleSection:Toggle({Name = "Particle Aura", Flag = "ParticleAura", Default = false, Callback = function(Value)
+    ParticleAura:Toggle(Value)
+end}):Colorpicker({Name = "", Flag = "ParticleAuraColor", Default = Color3.fromRGB(133, 220, 255), DefaultAlpha = 0.2, Callback = function(Value, Alpha)
+    ParticleAura:SetColor(Value)
+end})
+
+ParticleSection:Dropdown({
+    Name = "Particle",
+    Flag = "ParticleAuraType",
+    Default = "angel",
+    Items = ParticleAura:GetAuraNames(),
+    Callback = function(Value)
+        if Value then
+            ParticleAura:SetAura(Value)
+        end
+    end
+})
 
 if game.GameId == 111958650 or game.PlaceId == 286090429 then
     ArsenalAdapter:StartActor()
