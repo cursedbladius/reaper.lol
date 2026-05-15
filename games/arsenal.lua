@@ -87,86 +87,70 @@ function Arsenal:GetAllCategories()
     return categories
 end
 
-Arsenal._unlockConnection = nil
-Arsenal._cachedInventory = nil
+Arsenal._unlockActive = false
 
 function Arsenal:UnlockAll(enabled)
-    if self._unlockConnection then
-        self._unlockConnection:Disconnect()
-        self._unlockConnection = nil
-    end
+    self._unlockActive = enabled
     if not enabled then return end
 
-    local repStorage = game:GetService("ReplicatedStorage")
-    local itemData = nil
-    for _, child in pairs(repStorage:GetChildren()) do
-        if child.Name == "ItemData" then itemData = child break end
-    end
-    if not itemData then warn("[Arsenal] ItemData not found") return end
-    local images = nil
-    for _, child in pairs(itemData:GetChildren()) do
-        if child.Name == "Images" then images = child break end
-    end
-    if not images then warn("[Arsenal] Images not found") return end
-
-    if not self._cachedInventory then
-        for _, v in next, getgc(true) do
-            if typeof(v) == "table" and rawget(v, "Loadout") and typeof(rawget(v, "Items")) == "table" then
-                self._cachedInventory = rawget(v, "Items")
-                break
-            end
-        end
-    end
-
-    if not self._cachedInventory then
-        warn("[Arsenal] Could not find inventory table")
+    local actor = getactors()[1]
+    if not actor then
+        warn("[Arsenal] No actor found")
         return
     end
 
-    local cats = {}
-    for k, _ in next, self._cachedInventory do
-        table.insert(cats, k)
-    end
-    warn("[Arsenal] Inventory categories:", table.concat(cats, ", "))
+    run_on_actor(actor, [=[
+        local Players = game:GetService("Players")
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
+        local RunService = game:GetService("RunService")
+        local LocalPlayer = Players.LocalPlayer
+        local Items = ReplicatedStorage.ItemData.Images
 
-    local function doUnlock()
-        for _, category in next, images:GetChildren() do
-            if self._cachedInventory[category.Name] then
-                for _, item in next, category:GetChildren() do
-                    if not self._cachedInventory[category.Name][item.Name] then
-                        self._cachedInventory[category.Name][item.Name] = 1
+        local InventoryData = nil
+        for i, v in next, getgc(true) do
+            if typeof(v) == "table" and rawget(v, "Loadout") and typeof(rawget(v, "Items")) == "table" then
+                InventoryData = v.Items
+                break
+            end
+        end
+
+        if not InventoryData then
+            warn("[Arsenal] Could not find inventory data on actor")
+            return
+        end
+
+        local function AddEveryItem()
+            for _, v in next, Items:GetChildren() do
+                if InventoryData[v.Name] then
+                    for _, f in next, v:GetChildren() do
+                        if not InventoryData[v.Name][f.Name] then
+                            InventoryData[v.Name][f.Name] = 1
+                        end
                     end
                 end
             end
         end
-    end
 
-    doUnlock()
-    local timer = 0
-    self._unlockConnection = game:GetService("RunService").Heartbeat:Connect(function(dt)
-        timer = timer + dt
-        if timer >= 1 then
-            timer = 0
-            doUnlock()
-        end
-    end)
-    warn("[Arsenal] Unlock All active")
+        AddEveryItem()
+        RunService.Heartbeat:Connect(function()
+            for _, v in next, Items:GetChildren() do
+                if InventoryData[v.Name] then
+                    for _, f in next, v:GetChildren() do
+                        if not InventoryData[v.Name][f.Name] then
+                            AddEveryItem()
+                            return
+                        end
+                    end
+                end
+            end
+        end)
+        warn("[Arsenal] Unlock All active on actor")
+    ]=])
 end
 
 function Arsenal:SetMeleeSkin(skinName)
     pcall(function()
         game:GetService("Players").LocalPlayer.Data.Melee.Value = skinName
-    end)
-    pcall(function()
-        for _, v in next, getgc(true) do
-            if typeof(v) == "table" and rawget(v, "Loadout") then
-                local loadout = rawget(v, "Loadout")
-                if typeof(loadout) == "table" then
-                    loadout.Melee = skinName
-                end
-                break
-            end
-        end
     end)
 end
 
@@ -174,106 +158,70 @@ function Arsenal:SetGunSkin(skinName)
     pcall(function()
         game:GetService("Players").LocalPlayer.Equipped.Value = skinName
     end)
-    pcall(function()
-        for _, v in next, getgc(true) do
-            if typeof(v) == "table" and rawget(v, "Loadout") then
-                local loadout = rawget(v, "Loadout")
-                if typeof(loadout) == "table" then
-                    loadout.WeaponSkins = skinName
-                end
-                break
-            end
-        end
-    end)
 end
 
 Arsenal._killEffectHooked = false
-Arsenal._equippedKillEffect = nil
 
-function Arsenal:HookKillEffect()
+function Arsenal:SetKillEffect(effectName)
+    pcall(function()
+        game:GetService("Players").LocalPlayer.Data.KillEffect.Value = effectName
+    end)
+
     if self._killEffectHooked then return end
+    self._killEffectHooked = true
 
-    local effectFunc = nil
-    for _, v in next, getgc() do
-        if typeof(v) == "function" and islclosure(v) then
-            local info = debug.info(v, "l")
-            if info == 54994 then
-                effectFunc = v
-                break
-            end
-        end
-    end
-
-    if not effectFunc then
-        warn("[Arsenal] Could not find kill effect function")
+    local actor = getactors()[1]
+    if not actor then
+        warn("[Arsenal] No actor found for kill effect")
         return
     end
 
     local playerName = game:GetService("Players").LocalPlayer.Name
-    local original
-    original = hookfunction(effectFunc, newcclosure(function(...)
-        local args = {...}
-        if args[11] and tostring(args[11]):find(playerName) then
-            if Arsenal._equippedKillEffect then
-                args[12] = Arsenal._equippedKillEffect
-            end
-        end
-        return original(unpack(args))
-    end))
-    self._killEffectHooked = true
-    warn("[Arsenal] Kill effect hook active")
-end
+    run_on_actor(actor, [=[
+        local PlayerName = ...
+        local EquippedKillEffect = nil
 
-function Arsenal:SetKillEffect(effectName)
-    self._equippedKillEffect = effectName
-    pcall(function()
-        game:GetService("Players").LocalPlayer.Data.KillEffect.Value = effectName
-    end)
-    pcall(function()
-        for _, v in next, getgc(true) do
-            if typeof(v) == "table" and rawget(v, "Loadout") then
-                local loadout = rawget(v, "Loadout")
-                if typeof(loadout) == "table" then
-                    loadout.KillEffect = effectName
+        local effectFunc = nil
+        for _, v in next, getgc() do
+            if typeof(v) == "function" and islclosure(v) then
+                local info = debug.info(v, "l")
+                if info == 54994 then
+                    effectFunc = v
+                    break
                 end
-                break
             end
         end
-    end)
-    self:HookKillEffect()
+
+        if not effectFunc then
+            warn("[Arsenal] Could not find kill effect function on actor")
+            return
+        end
+
+        local original
+        original = hookfunction(effectFunc, newcclosure(function(...)
+            local args = {...}
+            if args[11] and tostring(args[11]):find(PlayerName) then
+                local lp = game:GetService("Players").LocalPlayer
+                local ke = lp and lp:FindFirstChild("Data") and lp.Data:FindFirstChild("KillEffect")
+                if ke and ke.Value ~= "" then
+                    args[12] = ke.Value
+                end
+            end
+            return original(unpack(args))
+        end))
+        warn("[Arsenal] Kill effect hook active on actor")
+    ]=], playerName)
 end
 
 function Arsenal:SetAnnouncer(announcerName)
     pcall(function()
         game:GetService("Players").LocalPlayer.Data.Announcer.Value = announcerName
     end)
-    pcall(function()
-        for _, v in next, getgc(true) do
-            if typeof(v) == "table" and rawget(v, "Loadout") then
-                local loadout = rawget(v, "Loadout")
-                if typeof(loadout) == "table" then
-                    loadout.Announcer = announcerName
-                end
-                break
-            end
-        end
-    end)
 end
 
 function Arsenal:SetCharacterSkin(skinName)
     pcall(function()
         game:GetService("Players").LocalPlayer.Data.Skin.Value = skinName
-    end)
-    pcall(function()
-        for _, v in next, getgc(true) do
-            if typeof(v) == "table" and rawget(v, "Loadout") then
-                local loadout = rawget(v, "Loadout")
-                if typeof(loadout) == "table" then
-                    loadout.Skin = skinName
-                end
-                break
-            end
-        end
     end)
 end
 

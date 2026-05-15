@@ -18,7 +18,6 @@ GameRegistry:Register(286090429, ArsenalAdapter)
 GameRegistry:Register(111958650, ArsenalAdapter)
 
 local _adapter = GameRegistry:Get()
-warn("[Init] PlaceId:", game.PlaceId, "GameId:", game.GameId, "Adapter:", _adapter and "FOUND" or "NIL")
 ToolModifier:Initialize(_adapter)
 
 local Window = Library:Window({
