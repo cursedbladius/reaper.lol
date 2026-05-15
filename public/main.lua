@@ -38,14 +38,14 @@ ESPSection:Toggle({Name = "Masterswitch", Flag = "ESPEnabled", Default = false, 
     ESP:Toggle(Value)
 end}):Colorpicker({Name = "", Flag = "ESPColor", Default = Color3.fromRGB(255, 0, 0)})
 
-ESPSection:Toggle({Name = "Box", Flag = "ESPBox", Default = true, Callback = function(Value)
+ESPSection:Toggle({Name = "Box", Flag = "ESPBox", Default = false, Callback = function(Value)
     ESP:SetSetting("Box", Value)
 end}):Colorpicker({Name = "", Flag = "ESPBoxColor", Default = Color3.fromRGB(255, 255, 255), Callback = function(Value)
     ESP:SetSetting("BoxColor", Value)
 end})
 
 local NameTypeDropdown
-ESPSection:Toggle({Name = "Name", Flag = "ESPName", Default = true, Callback = function(Value)
+ESPSection:Toggle({Name = "Name", Flag = "ESPName", Default = false, Callback = function(Value)
     ESP:SetSetting("Name", Value)
     if NameTypeDropdown then
         NameTypeDropdown:SetVisibility(Value)
@@ -62,10 +62,16 @@ NameTypeDropdown = ESPSection:Dropdown({Name = "Name Type", Flag = "ESPNameType"
     ESP:SetSetting("NameType", Value)
 end})
 
-ESPSection:Toggle({Name = "Health-bar", Flag = "ESPHealthBar", Default = true, Callback = function(Value)
+ESPSection:Toggle({Name = "Health-bar", Flag = "ESPHealthBar", Default = false, Callback = function(Value)
     ESP:SetSetting("HealthBar", Value)
 end}):Colorpicker({Name = "", Flag = "ESPHealthColor", Default = Color3.fromRGB(0, 255, 0), Callback = function(Value)
     ESP:SetSetting("HealthColor", Value)
+end})
+
+ESPSection:Toggle({Name = "Health Gradient", Flag = "ESPHealthGradient", Default = false, Callback = function(Value)
+    ESP:SetSetting("HealthGradient", Value)
+end}):Colorpicker({Name = "", Flag = "ESPHealthGradientColor", Default = Color3.fromRGB(255, 0, 0), Callback = function(Value)
+    ESP:SetSetting("HealthGradientColor", Value)
 end})
 
 ESPSection:Toggle({Name = "Distance", Flag = "ESPDistance", Default = false, Callback = function(Value)
