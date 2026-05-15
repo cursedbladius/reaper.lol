@@ -11,7 +11,10 @@ function Arsenal:GetToolTargets(playerName)
             break
         end
     end
-    if not viewmodels then return targets end
+    if not viewmodels then
+        warn("[Arsenal] Viewmodels folder NOT found")
+        return targets
+    end
 
     for _, child in pairs(viewmodels:GetChildren()) do
         if child.Name:sub(1, 2) == "v_" then
@@ -19,6 +22,7 @@ function Arsenal:GetToolTargets(playerName)
         end
     end
 
+    warn("[Arsenal] Found", #targets, "viewmodel targets")
     return targets
 end
 
