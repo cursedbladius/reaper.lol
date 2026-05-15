@@ -171,6 +171,16 @@ function Arsenal:StartActor()
             end
         end
 
+        local originalInventory = {}
+        for catName, catData in next, InventoryData do
+            if typeof(catData) == "table" then
+                originalInventory[catName] = {}
+                for itemName, itemVal in next, catData do
+                    originalInventory[catName][itemName] = itemVal
+                end
+            end
+        end
+
         local function AddEveryItem()
             for _, v in next, Items:GetChildren() do
                 if InventoryData[v.Name] then
@@ -206,6 +216,23 @@ function Arsenal:StartActor()
                 end
             end
         end
+
+        local function RemoveUnlockedItems()
+            local selected = ParseSelected()
+            for catName, catData in next, InventoryData do
+                if typeof(catData) == "table" then
+                    for itemName, _ in next, catData do
+                        local isOriginal = originalInventory[catName] and originalInventory[catName][itemName]
+                        local isSelected = selected[catName] and selected[catName][itemName]
+                        if not isOriginal and not isSelected then
+                            catData[itemName] = nil
+                        end
+                    end
+                end
+            end
+        end
+
+        local wasUnlocked = false
 
         if Loadout then
             local rl = table.clone(Loadout)
@@ -256,9 +283,15 @@ function Arsenal:StartActor()
 
         RunService.Heartbeat:Connect(function()
             if not InventoryData then return end
-            if unlockFlag and unlockFlag.Value == "1" then
+            local isUnlocked = unlockFlag and unlockFlag.Value == "1"
+            if isUnlocked then
                 AddEveryItem()
+                wasUnlocked = true
             else
+                if wasUnlocked then
+                    wasUnlocked = false
+                    RemoveUnlockedItems()
+                end
                 AddSelectedItems()
             end
         end)
