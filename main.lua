@@ -199,10 +199,14 @@ if game.GameId == 111958650 or game.PlaceId == 286090429 then
     end})
 
     local SkinSection = VisualsTab:Section({Name = "Skin-Changer", Side = 1})
-    SkinSection:Listbox({
+    SkinSection:Toggle({Name = "Unlock All Items", Flag = "ArsenalUnlockAll", Default = false, Callback = function(Value)
+        if Value then ArsenalAdapter:UnlockAll() end
+    end})
+    SkinSection:Dropdown({
+        Name = "Melee Skin",
         Flag = "ArsenalMeleeSkin",
+        Default = nil,
         Items = ArsenalAdapter.MeleeSkins,
-        Size = 200,
         Callback = function(Value)
             if Value == nil then return end
             ArsenalAdapter:SetMeleeSkin(Value)
@@ -212,7 +216,7 @@ if game.GameId == 111958650 or game.PlaceId == 286090429 then
         Name = "Gun Skin",
         Flag = "ArsenalGunSkin",
         Default = nil,
-        Items = {},
+        Items = ArsenalAdapter:GetItemNames("Skins"),
         Callback = function(Value)
             if Value == nil then return end
             ArsenalAdapter:SetGunSkin(Value)
@@ -222,7 +226,7 @@ if game.GameId == 111958650 or game.PlaceId == 286090429 then
         Name = "Kill Effect",
         Flag = "ArsenalKillEffect",
         Default = nil,
-        Items = {},
+        Items = ArsenalAdapter:GetItemNames("KillEffects"),
         Callback = function(Value)
             if Value == nil then return end
             ArsenalAdapter:SetKillEffect(Value)
@@ -232,7 +236,7 @@ if game.GameId == 111958650 or game.PlaceId == 286090429 then
         Name = "Announcer",
         Flag = "ArsenalAnnouncer",
         Default = nil,
-        Items = {},
+        Items = ArsenalAdapter:GetItemNames("Announcers"),
         Callback = function(Value)
             if Value == nil then return end
             ArsenalAdapter:SetAnnouncer(Value)
@@ -242,7 +246,7 @@ if game.GameId == 111958650 or game.PlaceId == 286090429 then
         Name = "Character Skin",
         Flag = "ArsenalCharSkin",
         Default = nil,
-        Items = {},
+        Items = ArsenalAdapter:GetItemNames("Characters"),
         Callback = function(Value)
             if Value == nil then return end
             ArsenalAdapter:SetCharacterSkin(Value)

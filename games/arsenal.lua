@@ -39,6 +39,88 @@ Arsenal.MeleeSkins = {
     "Kukri", "Rokia Hammer", "ACT Trophy"
 }
 
+function Arsenal:GetItemNames(category)
+    local names = {}
+    local repStorage = game:GetService("ReplicatedStorage")
+    local itemData = nil
+    for _, child in pairs(repStorage:GetChildren()) do
+        if child.Name == "ItemData" then itemData = child break end
+    end
+    if not itemData then return names end
+    local images = nil
+    for _, child in pairs(itemData:GetChildren()) do
+        if child.Name == "Images" then images = child break end
+    end
+    if not images then return names end
+    local folder = nil
+    for _, child in pairs(images:GetChildren()) do
+        if child.Name == category then folder = child break end
+    end
+    if not folder then return names end
+    for _, child in pairs(folder:GetChildren()) do
+        table.insert(names, child.Name)
+    end
+    table.sort(names)
+    return names
+end
+
+function Arsenal:GetAllCategories()
+    local categories = {}
+    local repStorage = game:GetService("ReplicatedStorage")
+    local itemData = nil
+    for _, child in pairs(repStorage:GetChildren()) do
+        if child.Name == "ItemData" then itemData = child break end
+    end
+    if not itemData then return categories end
+    local images = nil
+    for _, child in pairs(itemData:GetChildren()) do
+        if child.Name == "Images" then images = child break end
+    end
+    if not images then return categories end
+    for _, child in pairs(images:GetChildren()) do
+        categories[child.Name] = {}
+        for _, item in pairs(child:GetChildren()) do
+            table.insert(categories[child.Name], item.Name)
+        end
+        table.sort(categories[child.Name])
+    end
+    return categories
+end
+
+function Arsenal:UnlockAll()
+    local repStorage = game:GetService("ReplicatedStorage")
+    local itemData = nil
+    for _, child in pairs(repStorage:GetChildren()) do
+        if child.Name == "ItemData" then itemData = child break end
+    end
+    if not itemData then return end
+    local images = nil
+    for _, child in pairs(itemData:GetChildren()) do
+        if child.Name == "Images" then images = child break end
+    end
+    if not images then return end
+
+    local localPlayer = game:GetService("Players").LocalPlayer
+    local inventoryData = nil
+    for _, v in pairs(getgc(true)) do
+        if typeof(v) == "table" and rawget(v, "Loadout") and typeof(rawget(v, "Items")) == "table" then
+            inventoryData = v.Items
+            break
+        end
+    end
+    if not inventoryData then return end
+
+    for _, category in pairs(images:GetChildren()) do
+        if inventoryData[category.Name] then
+            for _, item in pairs(category:GetChildren()) do
+                if not inventoryData[category.Name][item.Name] then
+                    inventoryData[category.Name][item.Name] = 1
+                end
+            end
+        end
+    end
+end
+
 function Arsenal:SetMeleeSkin(skinName)
     pcall(function()
         game:GetService("Players").LocalPlayer.Data.Melee.Value = skinName
