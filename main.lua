@@ -175,25 +175,10 @@ ToolMaterialDropdown = ExtrasSection:Dropdown({
     end
 })
 
-ExtrasSection:Dropdown({
-    Name = "Effect",
-    Flag = "ToolModifierEffect",
-    Default = "None",
-    Items = {"None", "Rainbow", "Gradient", "Breathing", "Rainbow Gradient"},
-    Callback = function(Value)
-        ToolModifier.Effect = Value or "None"
-    end
-})
-
-ExtrasSection:Slider({Name = "Effect Speed", Flag = "ToolEffectSpeed", Default = 1, Min = 0.1, Max = 5, Increment = 0.1, Callback = function(Value)
-    ToolModifier.EffectSpeed = Value
-end})
-
 local _toolModFrame = 0
 game:GetService("RunService").RenderStepped:Connect(function()
     _toolModFrame = _toolModFrame + 1
-    local hasEffect = ToolModifier.Effect ~= "None" or ToolModifier.ArmEffect ~= "None"
-    if hasEffect or _toolModFrame % 3 == 0 then
+    if _toolModFrame % 3 == 0 then
         ToolModifier:Apply()
     end
 end)
@@ -215,56 +200,6 @@ if game.GameId == 111958650 or game.PlaceId == 286090429 then
     end})
     GunModSection:Toggle({Name = "Infinite Ammo", Flag = "ArsenalInfAmmo", Default = false, Callback = function(Value)
         if Value then ArsenalAdapter:InfiniteAmmo() end
-    end})
-
-    local ArmSection = VisualsTab:Section({Name = "Arm Modifier", Side = 2})
-    ArmSection:Toggle({Name = "Arm Modifier", Flag = "ArmModifier", Default = false, Callback = function(Value)
-        ToolModifier.ArmEnabled = Value
-        if not Value then
-            ToolModifier:ResetArms()
-        end
-    end}):Colorpicker({Name = "", Flag = "ArmModColor", Default = Color3.fromRGB(0, 255, 0), DefaultAlpha = 0.4, Callback = function(Value, Alpha)
-        ToolModifier.ArmColor = Value
-        ToolModifier.ArmAlpha = Alpha or 0
-    end})
-
-    local ArmOutlineToggle = ArmSection:Toggle({Name = "Outline", Flag = "ArmOutlineToggle", Default = true, Callback = function(Value)
-        ToolModifier.ArmOutlineEnabled = Value
-    end})
-    ArmOutlineToggle:Colorpicker({Name = "", Flag = "ArmOutlineColor", Default = Color3.fromRGB(255, 255, 255), Callback = function(Value)
-        ToolModifier.ArmOutlineColor = Value
-    end})
-
-    local ArmMaterialDropdown
-    ArmMaterialDropdown = ArmSection:Dropdown({
-        Name = "Arm Material",
-        Flag = "ArmMaterial",
-        Default = "Highlight",
-        Items = {"Highlight", "ForceField", "Neon"},
-        Callback = function(Value)
-            if Value == nil then
-                ArmMaterialDropdown:Set("Highlight")
-                return
-            end
-            ToolModifier.ArmMaterial = Value
-            pcall(function()
-                ArmOutlineToggle:SetVisiblity(Value == "Highlight")
-            end)
-        end
-    })
-
-    ArmSection:Dropdown({
-        Name = "Effect",
-        Flag = "ArmModifierEffect",
-        Default = "None",
-        Items = {"None", "Rainbow", "Gradient", "Breathing", "Rainbow Gradient"},
-        Callback = function(Value)
-            ToolModifier.ArmEffect = Value or "None"
-        end
-    })
-
-    ArmSection:Slider({Name = "Effect Speed", Flag = "ArmEffectSpeed", Default = 1, Min = 0.1, Max = 5, Increment = 0.1, Callback = function(Value)
-        ToolModifier.ArmEffectSpeed = Value
     end})
 
     local SkinSection = VisualsTab:Section({Name = "Skin-Changer", Side = 1})

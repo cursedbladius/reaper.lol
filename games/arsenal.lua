@@ -506,11 +506,6 @@ function Arsenal:InfiniteAmmo()
     end)
 end
 
-local function IsArmPart(name)
-    local n = name:lower()
-    return n:find("arm") or n:find("sleeve") or n:find("hand") or n:find("cssarm")
-end
-
 function Arsenal:GetToolTargets(playerName)
     local targets = {}
 
@@ -529,7 +524,9 @@ function Arsenal:GetToolTargets(playerName)
         for _, child in pairs(camera:GetChildren()) do
             if child.Name == "Arms" and child:IsA("Model") then
                 for _, sub in pairs(child:GetChildren()) do
-                    if (sub:IsA("BasePart") or sub:IsA("MeshPart")) and not IsArmPart(sub.Name) then
+                    if sub:IsA("BasePart") or sub:IsA("MeshPart") then
+                        table.insert(targets, sub)
+                    elseif sub:IsA("Model") and sub.Name ~= "CSSArms" then
                         table.insert(targets, sub)
                     end
                 end
@@ -542,21 +539,7 @@ function Arsenal:GetToolTargets(playerName)
 end
 
 function Arsenal:GetArmTargets(playerName)
-    local targets = {}
-    pcall(function()
-        local camera = workspace.CurrentCamera
-        for _, child in pairs(camera:GetChildren()) do
-            if child.Name == "Arms" and child:IsA("Model") then
-                for _, sub in pairs(child:GetChildren()) do
-                    if (sub:IsA("BasePart") or sub:IsA("MeshPart") or sub:IsA("Model")) and IsArmPart(sub.Name) then
-                        table.insert(targets, sub)
-                    end
-                end
-                break
-            end
-        end
-    end)
-    return targets
+    return {}
 end
 
 return Arsenal

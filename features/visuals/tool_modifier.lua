@@ -6,61 +6,14 @@ ToolModifier.Alpha = 0.4
 ToolModifier.Material = "Highlight"
 ToolModifier.OutlineColor = Color3.fromRGB(255, 255, 255)
 ToolModifier.OutlineEnabled = true
-ToolModifier.Effect = "None"
-ToolModifier.EffectSpeed = 1
-
-ToolModifier.ArmEnabled = false
-ToolModifier.ArmColor = Color3.fromRGB(0, 255, 0)
-ToolModifier.ArmAlpha = 0.4
-ToolModifier.ArmMaterial = "Highlight"
-ToolModifier.ArmOutlineColor = Color3.fromRGB(255, 255, 255)
-ToolModifier.ArmOutlineEnabled = true
-ToolModifier.ArmEffect = "None"
-ToolModifier.ArmEffectSpeed = 1
 
 local CurrentTool = nil
 local ToolHighlight = nil
 local ToolPartData = {}
 
-local function LerpColor(c1, c2, t)
-    return Color3.new(
-        c1.R + (c2.R - c1.R) * t,
-        c1.G + (c2.G - c1.G) * t,
-        c1.B + (c2.B - c1.B) * t
-    )
-end
-
-local function GetEffectColors(effect, speed, baseColor, outlineColor, alpha)
-    local t = tick() * (speed or 1)
-    if effect == "Rainbow" then
-        local hue = (t * 0.15) % 1
-        local rainbow = Color3.fromHSV(hue, 1, 1)
-        return rainbow, rainbow, alpha
-    elseif effect == "Gradient" then
-        local lerp = (math.sin(t * 2) + 1) / 2
-        local fill = LerpColor(baseColor, outlineColor, lerp)
-        local outline = LerpColor(outlineColor, baseColor, lerp)
-        return fill, outline, alpha
-    elseif effect == "Breathing" then
-        local pulse = (math.sin(t * 2) + 1) / 2
-        local a = alpha + (1 - alpha) * pulse * 0.6
-        return baseColor, outlineColor, a
-    elseif effect == "Rainbow Gradient" then
-        local hue1 = (t * 0.15) % 1
-        local hue2 = (hue1 + 0.5) % 1
-        local lerp = (math.sin(t * 2) + 1) / 2
-        local c1 = Color3.fromHSV(hue1, 1, 1)
-        local c2 = Color3.fromHSV(hue2, 1, 1)
-        return LerpColor(c1, c2, lerp), LerpColor(c2, c1, lerp), alpha
-    end
-    return baseColor, outlineColor, alpha
-end
-
 local GameAdapter = nil
 local GameHighlights = {}
 local GameOriginals = {}
-local ArmHighlights = {}
-local ArmOriginals = {}
 
 function ToolModifier:Initialize(gameAdapter)
     GameAdapter = gameAdapter
@@ -139,10 +92,9 @@ local function ApplyToEquippedTool(self)
             ToolHighlight.Parent = tool
         end
         ToolHighlight.Adornee = tool
-        local fc, oc, fa = GetEffectColors(self.Effect, self.EffectSpeed, self.Color, self.OutlineColor, self.Alpha)
-        ToolHighlight.FillColor = fc
-        ToolHighlight.FillTransparency = fa
-        ToolHighlight.OutlineColor = oc
+        ToolHighlight.FillColor = self.Color
+        ToolHighlight.FillTransparency = self.Alpha
+        ToolHighlight.OutlineColor = self.OutlineColor
         ToolHighlight.OutlineTransparency = self.OutlineEnabled and 0 or 1
         ToolHighlight.Enabled = true
     else
@@ -277,21 +229,20 @@ local function ApplyToGameTargets(self)
                 for _, c in pairs(p:GetChildren()) do
                     if c.Name == "_ToolModHighlight" then existing = c break end
                 end
-                local fc, oc, fa = GetEffectColors(self.Effect, self.EffectSpeed, self.Color, self.OutlineColor, self.Alpha)
                 if not existing then
                     local hl = Instance.new("Highlight")
                     hl.Name = "_ToolModHighlight"
                     hl.Adornee = p
-                    hl.FillColor = fc
-                    hl.FillTransparency = fa
-                    hl.OutlineColor = oc
+                    hl.FillColor = self.Color
+                    hl.FillTransparency = self.Alpha
+                    hl.OutlineColor = self.OutlineColor
                     hl.OutlineTransparency = self.OutlineEnabled and 0 or 1
                     hl.Parent = p
                     table.insert(GameHighlights, hl)
                 else
-                    existing.FillColor = fc
-                    existing.FillTransparency = fa
-                    existing.OutlineColor = oc
+                    existing.FillColor = self.Color
+                    existing.FillTransparency = self.Alpha
+                    existing.OutlineColor = self.OutlineColor
                     existing.OutlineTransparency = self.OutlineEnabled and 0 or 1
                 end
             end)
@@ -303,14 +254,13 @@ local function ApplyToGameTargets(self)
         GameHighlights = {}
 
         local mat = self.Material == "ForceField" and Enum.Material.ForceField or Enum.Material.Neon
-        local fc, _, _ = GetEffectColors(self.Effect, self.EffectSpeed, self.Color, self.OutlineColor, self.Alpha)
         for _, p in pairs(allParts) do
             pcall(function()
                 p.Material = mat
                 if self.Material == "ForceField" then
-                    p.BrickColor = BrickColor.new(fc)
+                    p.BrickColor = BrickColor.new(self.Color)
                 else
-                    p.Color = fc
+                    p.Color = self.Color
                 end
                 pcall(function() p.TextureID = "" end)
             end)
@@ -329,126 +279,10 @@ local function ApplyToGameTargets(self)
     end
 end
 
-local function ApplyToArmTargets(self)
-    if not GameAdapter or not GameAdapter.GetArmTargets then return end
-
-    local localPlayer = game:GetService("Players").LocalPlayer
-    local targets = GameAdapter:GetArmTargets(localPlayer.Name)
-    if #targets == 0 then return end
-
-    local allParts = {}
-    for _, target in pairs(targets) do
-        local parts = {target}
-        for _, p in pairs(target:GetDescendants()) do
-            table.insert(parts, p)
-        end
-        for _, p in pairs(parts) do
-            if p:IsA("BasePart") and not ArmOriginals[p] then
-                local removables = {}
-                local specialMesh = nil
-                local specialMeshTexture = nil
-                for _, child in ipairs(p:GetChildren()) do
-                    if child:IsA("SurfaceAppearance") or child:IsA("Decal") or child:IsA("Texture") then
-                        table.insert(removables, {Instance = child, Parent = p})
-                    end
-                    if child:IsA("SpecialMesh") or child:IsA("FileMesh") then
-                        specialMesh = child
-                        specialMeshTexture = child.TextureId
-                    end
-                end
-                ArmOriginals[p] = {
-                    Material = p.Material,
-                    Color = p.Color,
-                    BrickColor = p.BrickColor,
-                    TextureID = pcall(function() return p.TextureID end) and p.TextureID or nil,
-                    SpecialMesh = specialMesh,
-                    SpecialMeshTexture = specialMeshTexture,
-                    Removables = removables,
-                }
-            end
-            if p:IsA("BasePart") then
-                table.insert(allParts, p)
-            end
-        end
-    end
-
-    for _, hl in pairs(ArmHighlights) do
-        pcall(function() hl:Destroy() end)
-    end
-    ArmHighlights = {}
-
-    local mat
-    if self.ArmMaterial == "Highlight" then
-        mat = Enum.Material.Neon
-    elseif self.ArmMaterial == "ForceField" then
-        mat = Enum.Material.ForceField
-    else
-        mat = Enum.Material.Neon
-    end
-
-    local fc, _, _ = GetEffectColors(self.ArmEffect, self.ArmEffectSpeed, self.ArmColor, self.ArmOutlineColor, self.ArmAlpha)
-    for _, p in pairs(allParts) do
-        pcall(function()
-            if p.Transparency < 1 then
-                p.Material = mat
-                if self.ArmMaterial == "ForceField" then
-                    p.BrickColor = BrickColor.new(fc)
-                else
-                    p.Color = fc
-                end
-                pcall(function() p.TextureID = "" end)
-            end
-        end)
-    end
-    for _, target in pairs(targets) do
-        local items = {target}
-        for _, d in pairs(target:GetDescendants()) do
-            table.insert(items, d)
-        end
-        for _, p in pairs(items) do
-            pcall(function()
-                if p:IsA("SpecialMesh") or p:IsA("FileMesh") then
-                    p.TextureId = ""
-                elseif p:IsA("SurfaceAppearance") or p:IsA("Decal") or p:IsA("Texture") then
-                    p.Parent = nil
-                end
-            end)
-        end
-    end
-end
-
-function ToolModifier:ResetArms()
-    for _, hl in pairs(ArmHighlights) do
-        pcall(function() hl:Destroy() end)
-    end
-    ArmHighlights = {}
-    for part, orig in pairs(ArmOriginals) do
-        pcall(function()
-            part.Material = orig.Material
-            part.Color = orig.Color
-            part.BrickColor = orig.BrickColor
-            if orig.TextureID ~= nil then
-                pcall(function() part.TextureID = orig.TextureID end)
-            end
-            if orig.SpecialMesh and orig.SpecialMeshTexture then
-                pcall(function() orig.SpecialMesh.TextureId = orig.SpecialMeshTexture end)
-            end
-            for _, r in ipairs(orig.Removables or {}) do
-                pcall(function() if not r.Instance.Parent then r.Instance.Parent = r.Parent end end)
-            end
-        end)
-    end
-    ArmOriginals = {}
-end
-
 function ToolModifier:Apply()
-    if self.Enabled then
-        ApplyToEquippedTool(self)
-        ApplyToGameTargets(self)
-    end
-    if self.ArmEnabled then
-        ApplyToArmTargets(self)
-    end
+    if not self.Enabled then return end
+    ApplyToEquippedTool(self)
+    ApplyToGameTargets(self)
 end
 
 return ToolModifier
