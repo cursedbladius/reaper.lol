@@ -1,8 +1,5 @@
 local LoadStart = os.clock()
-local _src = game:HttpGet("https://reaper-lol.pages.dev/ui/library.lua")
-local _fn, _err = loadstring(_src)
-if not _fn then warn("[LOAD] library.lua parse error:", _err, "| first 200 chars:", string.sub(_src or "", 1, 200)) end
-local Library = _fn()
+local Library = loadstring(game:HttpGet("https://reaper-lol.pages.dev/ui/library.lua"))()
 
 local ESP = loadstring(game:HttpGet("https://reaper-lol.pages.dev/features/visuals/esp.lua"))()
 ESP:Initialize()
@@ -17,9 +14,7 @@ GameRegistry:Register(2788229376, DaHoodAdapter)
 GameRegistry:Register(15169303036, CriminalityAdapter)
 GameRegistry:Register(1494262959, CriminalityAdapter)
 
-local _adapter = GameRegistry:Get()
-warn("[ToolMod] PlaceId:", game.PlaceId, "| GameId:", game.GameId, "| Adapter:", _adapter and "FOUND" or "NIL")
-ToolModifier:Initialize(_adapter)
+ToolModifier:Initialize(GameRegistry:Get())
 
 local Window = Library:Window({
     Name = "reaper.lol",

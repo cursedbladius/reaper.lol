@@ -155,13 +155,7 @@ local function ApplyToEquippedTool(self)
     end
 end
 
-local _dbgTime = 0
 local function ApplyToGameTargets(self)
-    local now = tick()
-    if (now - _dbgTime) > 3 then
-        _dbgTime = now
-        warn("[ToolMod] GameAdapter:", GameAdapter and "YES" or "NIL", "| PlaceId:", game.PlaceId, "| GameId:", game.GameId)
-    end
     if not GameAdapter then return end
 
     local localPlayer = game:GetService("Players").LocalPlayer
