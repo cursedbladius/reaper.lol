@@ -28,6 +28,7 @@ ESP.Settings = {
     SkeletonColor = Color3.fromRGB(255, 255, 255),
     Chams = false,
     ChamsColor = Color3.fromRGB(255, 0, 0),
+    ChamsOutlineColor = Color3.fromRGB(255, 255, 255),
     Tool = false,
     ToolColor = Color3.fromRGB(255, 255, 255),
     MaxDistance = 1000,
@@ -135,6 +136,10 @@ end
 -- Destroy ESP drawings for a player
 local function DestroyESPObject(obj)
     if not obj then return end
+    if obj.Highlight then
+        pcall(function() obj.Highlight:Destroy() end)
+        obj.Highlight = nil
+    end
     for key, val in pairs(obj) do
         if type(val) == "table" then
             for _, drawing in ipairs(val) do
@@ -149,6 +154,9 @@ end
 -- Hide all drawings in an ESP object
 local function HideESPObject(obj)
     if not obj then return end
+    if obj.Highlight then
+        pcall(function() obj.Highlight.Enabled = false end)
+    end
     for key, val in pairs(obj) do
         if type(val) == "table" then
             for _, drawing in ipairs(val) do
@@ -558,6 +566,26 @@ local function UpdateESP()
             for i = 1, #obj.SkeletonOutlines do
                 obj.SkeletonOutlines[i].Visible = false
                 obj.SkeletonLines[i].Visible = false
+            end
+        end
+
+        -- ═══════════════════════ CHAMS ESP ═══════════════════════
+        if ESP.Settings.Chams then
+            if not obj.Highlight or not obj.Highlight.Parent then
+                local highlight = Instance.new("Highlight")
+                highlight.FillTransparency = 0.5
+                highlight.OutlineTransparency = 0
+                highlight.Adornee = character
+                highlight.Parent = character
+                obj.Highlight = highlight
+            end
+
+            obj.Highlight.FillColor = ESP.Settings.ChamsColor
+            obj.Highlight.OutlineColor = ESP.Settings.ChamsOutlineColor
+            obj.Highlight.Enabled = true
+        else
+            if obj.Highlight then
+                obj.Highlight.Enabled = false
             end
         end
 
