@@ -1901,6 +1901,133 @@ local Library do
             Colorpicker:SetOpen(not Colorpicker.IsOpen)
         end)
 
+        -- Right-click context menu
+        local ContextMenu = nil
+        
+        Items["ColorpickerButton"]:Connect("MouseButton2Down", function()
+            if ContextMenu and ContextMenu.Instance then
+                ContextMenu:Clean()
+                ContextMenu = nil
+                return
+            end
+            
+            local ButtonPos = Items["ColorpickerButton"].Instance.AbsolutePosition
+            local ButtonSize = Items["ColorpickerButton"].Instance.AbsoluteSize
+            
+            ContextMenu = Instances:Create("Frame", {
+                Parent = Library.Holder.Instance,
+                Name = "\0",
+                Position = UDim2New(0, ButtonPos.X, 0, ButtonPos.Y + ButtonSize.Y + 2),
+                Size = UDim2New(0, 100, 0, 66),
+                BackgroundColor3 = FromRGB(25, 25, 25),
+                BorderColor3 = FromRGB(10, 10, 10),
+                BorderSizePixel = 2,
+                ZIndex = 10002
+            })
+            
+            Instances:Create("UIStroke", {
+                Parent = ContextMenu.Instance,
+                ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+                LineJoinMode = Enum.LineJoinMode.Miter,
+                Name = "\0",
+                Color = FromRGB(40, 40, 40),
+                ZIndex = 10002
+            })
+            
+            Instances:Create("UIPadding", {
+                Parent = ContextMenu.Instance,
+                PaddingTop = UDimNew(0, 2),
+                PaddingBottom = UDimNew(0, 2),
+                PaddingLeft = UDimNew(0, 2),
+                PaddingRight = UDimNew(0, 2)
+            })
+            
+            local MenuItems = {}
+            local MenuOptions = {
+                {Name = "Copy Colour", Callback = function()
+                    if setclipboard then
+                        setclipboard(tostring(Colorpicker.Color))
+                    end
+                    if ContextMenu then
+                        ContextMenu:Clean()
+                        ContextMenu = nil
+                    end
+                end},
+                {Name = "Paste Colour", Callback = function()
+                    if getclipboard then
+                        local clipboard = getclipboard()
+                        if clipboard then
+                            -- Try to parse as hex or rgb
+                            local hex = clipboard:match("#?([0-9A-Fa-f]+)")
+                            if hex and #hex >= 6 then
+                                Colorpicker:Set(FromHex(hex:sub(1, 6)))
+                            end
+                        end
+                    end
+                    if ContextMenu then
+                        ContextMenu:Clean()
+                        ContextMenu = nil
+                    end
+                end},
+                {Name = "Copy HEX", Callback = function()
+                    if setclipboard then
+                        setclipboard("#" .. Colorpicker.HexValue)
+                    end
+                    if ContextMenu then
+                        ContextMenu:Clean()
+                        ContextMenu = nil
+                    end
+                end}
+            }
+            
+            for i, Option in ipairs(MenuOptions) do
+                local MenuButton = Instances:Create("TextButton", {
+                    Parent = ContextMenu.Instance,
+                    Name = "\0",
+                    Size = UDim2New(1, 0, 0, 20),
+                    Position = UDim2New(0, 0, 0, (i - 1) * 21),
+                    BackgroundColor3 = FromRGB(33, 33, 36),
+                    Text = Option.Name,
+                    FontFace = Library.Font,
+                    TextColor3 = FromRGB(200, 200, 200),
+                    TextSize = 11,
+                    AutoButtonColor = false,
+                    ZIndex = 10003
+                })
+                
+                MenuButton:OnHover(function()
+                    MenuButton:Tween(nil, {BackgroundColor3 = FromRGB(50, 50, 55)})
+                end)
+                
+                MenuButton:OnHoverLeave(function()
+                    MenuButton:Tween(nil, {BackgroundColor3 = FromRGB(33, 33, 36)})
+                end)
+                
+                MenuButton:Connect("MouseButton1Down", Option.Callback)
+            end
+            
+            -- Close menu when clicking outside
+            local CloseConnection
+            CloseConnection = UserInputService.InputBegan:Connect(function(Input)
+                if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.MouseButton2 then
+                    if ContextMenu and ContextMenu.Instance then
+                        local MousePos = UserInputService:GetMouseLocation()
+                        local MenuPos = ContextMenu.Instance.AbsolutePosition
+                        local MenuSize = ContextMenu.Instance.AbsoluteSize
+                        
+                        if MousePos.X < MenuPos.X or MousePos.X > MenuPos.X + MenuSize.X or
+                           MousePos.Y < MenuPos.Y or MousePos.Y > MenuPos.Y + MenuSize.Y then
+                            CloseConnection:Disconnect()
+                            ContextMenu:Clean()
+                            ContextMenu = nil
+                        end
+                    else
+                        CloseConnection:Disconnect()
+                    end
+                end
+            end)
+        end)
+
         local PaletteChanged
 
         Items["Palette"]:Connect("InputBegan", function(Input)
