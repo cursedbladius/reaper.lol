@@ -1772,17 +1772,30 @@ local Library do
             })  Items["HexInput"]:AddToTheme({TextColor3 = "Text"})
             
             -- Handle hex input
-            Items["HexInput"].Instance.FocusLost:Connect(function()
+            local function ApplyHexInput()
                 local text = Items["HexInput"].Instance.Text
                 if text and #text > 0 then
-                    -- Remove # if present
-                    text = text:gsub("^#", "")
-                    -- Validate hex
-                    if text:match("^[0-9A-Fa-f]{6}$") then
+                    -- Trim whitespace and remove #
+                    text = text:gsub("^%s*#?%s*", ""):gsub("%s*$", "")
+                    -- Validate hex (6 characters)
+                    if text:match("^[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]$") then
                         pcall(function()
                             Colorpicker:Set(FromHex(text))
                         end)
                     end
+                end
+            end
+            
+            Items["HexInput"].Instance.FocusLost:Connect(ApplyHexInput)
+            
+            -- Also handle Return key
+            Items["HexInput"].Instance:GetPropertyChangedSignal("Text"):Connect(function()
+                local text = Items["HexInput"].Instance.Text
+                -- Auto-apply if exactly 6 hex chars (no #)
+                if text and text:match("^[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]$") then
+                    pcall(function()
+                        Colorpicker:Set(FromHex(text))
+                    end)
                 end
             end)
         end
