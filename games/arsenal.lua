@@ -283,8 +283,13 @@ function Arsenal:StartActor()
                         KillEffect = hookfunction(v, newcclosure(function(...)
                             local args = {...}
                             if args[11] and tostring(args[11]):find(PlayerName) then
-                                if not EquippedKillEffect then return end
-                                args[12] = EquippedKillEffect
+                                local ke = nil
+                                pcall(function()
+                                    ke = LocalPlayer.Data.KillEffect.Value
+                                end)
+                                if ke and ke ~= "" and ke ~= "None" then
+                                    args[12] = ke
+                                end
                             end
                             return KillEffect(unpack(args))
                         end))
