@@ -197,7 +197,11 @@ local function ApplyToolModifier()
         ToolHighlight.FillColor = ToolModifierColor
         ToolHighlight.FillTransparency = ToolModifierAlpha
         ToolHighlight.OutlineColor = ToolModifierOutline
+<<<<<<< HEAD:main.lua
         ToolHighlight.OutlineTransparency = ToolOutlineEnabled and 0 or 1
+=======
+        ToolHighlight.OutlineTransparency = 0
+>>>>>>> 2c1d722aef3104ff99387e428670dc2200637220:public/main.lua
         ToolHighlight.Enabled = true
     else
         if ToolHighlight then
@@ -322,10 +326,14 @@ end}):Colorpicker({Name = "", Flag = "ToolModifierColor", Default = Color3.fromR
     ToolModifierAlpha = Alpha or 0
 end})
 
+<<<<<<< HEAD:main.lua
 local ToolOutlineEnabled = true
 local OutlineToggle = ExtrasSection:Toggle({Name = "Outline", Flag = "ToolOutlineToggle", Default = true, Callback = function(Value)
     ToolOutlineEnabled = Value
 end})
+=======
+local OutlineToggle = ExtrasSection:Toggle({Name = "Outline", Flag = "ToolOutlineToggle", Default = true, Callback = function() end})
+>>>>>>> 2c1d722aef3104ff99387e428670dc2200637220:public/main.lua
 OutlineToggle:Colorpicker({Name = "", Flag = "ToolModifierOutline", Default = Color3.fromRGB(255, 255, 255), Callback = function(Value)
     ToolModifierOutline = Value
 end})
