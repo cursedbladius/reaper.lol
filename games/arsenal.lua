@@ -45,6 +45,123 @@ function Arsenal:SetMeleeSkin(skinName)
     end)
 end
 
+function Arsenal:SetGunSkin(skinName)
+    pcall(function()
+        game:GetService("Players").LocalPlayer.Equipped.Value = skinName
+    end)
+end
+
+function Arsenal:SetKillEffect(effectName)
+    pcall(function()
+        game:GetService("Players").LocalPlayer.Data.KillEffect.Value = effectName
+    end)
+end
+
+function Arsenal:SetAnnouncer(announcerName)
+    pcall(function()
+        game:GetService("Players").LocalPlayer.Data.Announcer.Value = announcerName
+    end)
+end
+
+function Arsenal:SetCharacterSkin(skinName)
+    pcall(function()
+        game:GetService("Players").LocalPlayer.Data.Skin.Value = skinName
+    end)
+end
+
+function Arsenal:NoRecoil()
+    local Weapons = game:GetService("ReplicatedStorage"):FindFirstChild("Weapons")
+    if not Weapons then
+        for _, child in pairs(game:GetService("ReplicatedStorage"):GetChildren()) do
+            if child.Name == "Weapons" then Weapons = child break end
+        end
+    end
+    if not Weapons then return end
+    for _, v in pairs(Weapons:GetChildren()) do
+        pcall(function()
+            if v:FindFirstChild("RecoilControl") then
+                v.RecoilControl.Value = 0
+            end
+        end)
+    end
+end
+
+function Arsenal:NoSpread()
+    local Weapons = game:GetService("ReplicatedStorage"):FindFirstChild("Weapons")
+    if not Weapons then
+        for _, child in pairs(game:GetService("ReplicatedStorage"):GetChildren()) do
+            if child.Name == "Weapons" then Weapons = child break end
+        end
+    end
+    if not Weapons then return end
+    for _, v in pairs(Weapons:GetChildren()) do
+        pcall(function()
+            if v:FindFirstChild("MaxSpread") then
+                v.MaxSpread.Value = 0.01
+            end
+            if v:FindFirstChild("SpreadRecovery") then
+                v.SpreadRecovery.Value = 0.01
+            end
+        end)
+    end
+end
+
+function Arsenal:FastReload()
+    local Weapons = game:GetService("ReplicatedStorage"):FindFirstChild("Weapons")
+    if not Weapons then
+        for _, child in pairs(game:GetService("ReplicatedStorage"):GetChildren()) do
+            if child.Name == "Weapons" then Weapons = child break end
+        end
+    end
+    if not Weapons then return end
+    for _, v in pairs(Weapons:GetChildren()) do
+        pcall(function()
+            if v:FindFirstChild("ReloadTime") then
+                v.ReloadTime.Value = 0.01
+            end
+        end)
+    end
+end
+
+function Arsenal:FastFireRate()
+    local Weapons = game:GetService("ReplicatedStorage"):FindFirstChild("Weapons")
+    if not Weapons then
+        for _, child in pairs(game:GetService("ReplicatedStorage"):GetChildren()) do
+            if child.Name == "Weapons" then Weapons = child break end
+        end
+    end
+    if not Weapons then return end
+    for _, v in pairs(Weapons:GetChildren()) do
+        pcall(function()
+            if v:FindFirstChild("FireRate") then
+                v.FireRate.Value = 0.01
+            end
+            if v:FindFirstChild("BFireRate") then
+                v.BFireRate.Value = 0.01
+            end
+        end)
+    end
+end
+
+function Arsenal:InfiniteAmmo()
+    pcall(function()
+        local repStorage = game:GetService("ReplicatedStorage")
+        local wkspc = nil
+        for _, child in pairs(repStorage:GetChildren()) do
+            if child.Name == "wkspc" then wkspc = child break end
+        end
+        if wkspc then
+            local curse = nil
+            for _, child in pairs(wkspc:GetChildren()) do
+                if child.Name == "CurrentCurse" then curse = child break end
+            end
+            if curse then
+                curse.Value = "Infinite Ammo"
+            end
+        end
+    end)
+end
+
 function Arsenal:GetToolTargets(playerName)
     local targets = {}
 

@@ -181,6 +181,23 @@ game:GetService("RunService").RenderStepped:Connect(function()
 end)
 
 if game.GameId == 111958650 or game.PlaceId == 286090429 then
+    local GunModSection = WeaponSection
+    GunModSection:Toggle({Name = "No Recoil", Flag = "ArsenalNoRecoil", Default = false, Callback = function(Value)
+        if Value then ArsenalAdapter:NoRecoil() end
+    end})
+    GunModSection:Toggle({Name = "No Spread", Flag = "ArsenalNoSpread", Default = false, Callback = function(Value)
+        if Value then ArsenalAdapter:NoSpread() end
+    end})
+    GunModSection:Toggle({Name = "Fast Reload", Flag = "ArsenalFastReload", Default = false, Callback = function(Value)
+        if Value then ArsenalAdapter:FastReload() end
+    end})
+    GunModSection:Toggle({Name = "Fast Fire Rate", Flag = "ArsenalFireRate", Default = false, Callback = function(Value)
+        if Value then ArsenalAdapter:FastFireRate() end
+    end})
+    GunModSection:Toggle({Name = "Infinite Ammo", Flag = "ArsenalInfAmmo", Default = false, Callback = function(Value)
+        if Value then ArsenalAdapter:InfiniteAmmo() end
+    end})
+
     local SkinSection = VisualsTab:Section({Name = "Skin-Changer", Side = 1})
     SkinSection:Listbox({
         Flag = "ArsenalMeleeSkin",
@@ -189,6 +206,46 @@ if game.GameId == 111958650 or game.PlaceId == 286090429 then
         Callback = function(Value)
             if Value == nil then return end
             ArsenalAdapter:SetMeleeSkin(Value)
+        end
+    })
+    SkinSection:Dropdown({
+        Name = "Gun Skin",
+        Flag = "ArsenalGunSkin",
+        Default = nil,
+        Items = {},
+        Callback = function(Value)
+            if Value == nil then return end
+            ArsenalAdapter:SetGunSkin(Value)
+        end
+    })
+    SkinSection:Dropdown({
+        Name = "Kill Effect",
+        Flag = "ArsenalKillEffect",
+        Default = nil,
+        Items = {},
+        Callback = function(Value)
+            if Value == nil then return end
+            ArsenalAdapter:SetKillEffect(Value)
+        end
+    })
+    SkinSection:Dropdown({
+        Name = "Announcer",
+        Flag = "ArsenalAnnouncer",
+        Default = nil,
+        Items = {},
+        Callback = function(Value)
+            if Value == nil then return end
+            ArsenalAdapter:SetAnnouncer(Value)
+        end
+    })
+    SkinSection:Dropdown({
+        Name = "Character Skin",
+        Flag = "ArsenalCharSkin",
+        Default = nil,
+        Items = {},
+        Callback = function(Value)
+            if Value == nil then return end
+            ArsenalAdapter:SetCharacterSkin(Value)
         end
     })
 end
