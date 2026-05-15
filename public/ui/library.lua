@@ -332,7 +332,7 @@ local Library do
     }
 
     -- Files 
-    for _, FileName in Library.Folders do
+    for _, FileName in pairs(Library.Folders) do
         if not isfolder(FileName) then
             makefolder(FileName)
         end
@@ -342,12 +342,19 @@ local Library do
         writefile(Library.Folders.Directory .. "/autoload.json", "")
     end
 
-    for _, ImageData in Library.Images do
+    for _, ImageData in pairs(Library.Images) do
         local ImageName = ImageData[1]
         local ImageLink = ImageData[2]
         
         if not isfile(Library.Folders.Assets .. "/" .. ImageName) then
-            writefile(Library.Folders.Assets .. "/" .. ImageName, game:HttpGet(ImageLink))
+            local Success, Result = pcall(function()
+                return game:HttpGet(ImageLink)
+            end)
+            if Success and Result then
+                writefile(Library.Folders.Assets .. "/" .. ImageName, Result)
+            else
+                warn("Failed to download image: " .. ImageName .. " - " .. tostring(Result))
+            end
         end
     end
 
@@ -401,7 +408,7 @@ local Library do
                 return
             end
 
-            Tween:Pause()
+            self.Tween:Pause()
             self = nil
         end
     end
@@ -418,7 +425,7 @@ local Library do
 
             setmetatable(NewItem, Instances)
 
-            for Property, Value in NewItem.Properties do
+            for Property, Value in pairs(NewItem.Properties) do
                 NewItem.Instance[Property] = Value
             end
 
@@ -437,7 +444,7 @@ local Library do
 
             local NewTween
 
-            for Index, Value in Descendants do 
+            for Index, Value in pairs(Descendants) do 
                 local TransparencyProperty = Tween:GetProperty(Value)
 
                 if not TransparencyProperty then 
@@ -445,7 +452,7 @@ local Library do
                 end
 
                 if type(TransparencyProperty) == "table" then 
-                    for _, Property in TransparencyProperty do 
+                    for _, Property in pairs(TransparencyProperty) do 
                         NewTween = Tween:FadeItem(Value, Property, not Visibility, Speed)
                     end
                 else
@@ -644,7 +651,7 @@ local Library do
                 StartPosition = Vector2New(Gui.Position.X.Offset, Gui.Position.Y.Offset)
                 StartSize = Vector2New(Gui.Size.X.Offset, Gui.Size.Y.Offset)
                 
-                for Index, Value in Edges do 
+                for Index, Value in pairs(Edges) do 
                     Value.Button.Instance.BackgroundTransparency = (Value.Side == Side) and 0 or 1
                 end
             end
@@ -653,12 +660,12 @@ local Library do
                 Resizing = false 
                 CurrentSide = nil
 
-                for Index, Value in Edges do 
+                for Index, Value in pairs(Edges) do 
                     Value.Button.Instance.BackgroundTransparency = 1
                 end
             end
 
-            for Index, Value in Edges do 
+            for Index, Value in pairs(Edges) do 
                 Value.Button:Connect("InputBegan", function(Input)
                     if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
                         BeginResizing(Value.Side)
@@ -767,7 +774,11 @@ local Library do
             Url = "https://github.com/sametexe001/luas/raw/refs/heads/main/fonts/windows-xp-tahoma.ttf"
         })
 
-        Library.Font = CustomFont:Get("Windows-XP-Tahoma")
+        Library.Font = CustomFont:Get("Windows-XP-Tahoma") or Font.new("rbxasset://fonts/families/Ubuntu.json")
+    end
+
+    if not Library.Font then
+        Library.Font = Font.new("rbxasset://fonts/families/SourceSansPro.json")
     end
 
     Library.Holder = Instances:Create("ScreenGui", {
@@ -835,7 +846,7 @@ local Library do
             [Property] = Visibility and OldTransparency or 1
         }, true)
 
-        Library:Connect(NewTween.Tween.Completed, function()
+        NewTween.Tween.Completed:Once(function()
             if not Visibility then 
                 task.wait()
                 Item[Property] = OldTransparency
@@ -846,11 +857,11 @@ local Library do
     end
 
     Library.Unload = function(self)
-        for Index, Value in self.Connections do 
+        for Index, Value in pairs(self.Connections) do 
             Value.Connection:Disconnect()
         end
 
-        for Index, Value in self.Threads do 
+        for Index, Value in pairs(self.Threads) do 
             coroutine.close(Value)
         end
 
@@ -906,7 +917,7 @@ local Library do
     end
 
     Library.Disconnect = function(self, Name)
-        for _, Connection in self.Connections do 
+        for _, Connection in pairs(self.Connections) do 
             if Connection.Name == Name then
                 Connection.Connection:Disconnect()
                 break
@@ -927,7 +938,7 @@ local Library do
             Properties = Properties,
         }
 
-        for Property, Value in ThemeData.Properties do
+        for Property, Value in pairs(ThemeData.Properties) do
             if type(Value) == "string" then
                 Item[Property] = self.Theme[Value]
             end
@@ -941,7 +952,7 @@ local Library do
         local Config = { } 
 
         local Success, Result = Library:SafeCall(function()
-            for Index, Value in Library.Flags do 
+            for Index, Value in pairs(Library.Flags) do 
                 if type(Value) == "table" and Value.Key then
                     Config[Index] = {Key = tostring(Value.Key), Mode = Value.Mode}
                 elseif type(Value) == "table" and Value.Color then
@@ -959,7 +970,7 @@ local Library do
         local Decoded = HttpService:JSONDecode(Config)
 
         local Success, Result = Library:SafeCall(function()
-            for Index, Value in Decoded do 
+            for Index, Value in pairs(Decoded) do 
                 local SetFunction = Library.SetFlags[Index]
 
                 if not SetFunction then
@@ -989,8 +1000,8 @@ local Library do
     end
 
     Library.SaveConfig = function(self, Config)
-        if isfile(Library.Folders.Directory .. "/" .. Library.Folders.Configs .. "/" .. Config .. ".json") then
-            writefile(Library.Folders.Directory .. "/" .. Library.Folders.Configs .. "/" .. Config .. ".json", Library:GetConfig())
+        if isfile(Library.Folders.Configs .. "/" .. Config .. ".json") then
+            writefile(Library.Folders.Configs .. "/" .. Config .. ".json", Library:GetConfig())
             Library:Notification("Saved config " .. Config .. ".json", 5, Color3.fromRGB(0, 255, 0))
         end
     end
@@ -1001,12 +1012,12 @@ local Library do
 
         local ConfigFolderName = StringGSub(Library.Folders.Configs, Library.Folders.Directory .. "/", "")
 
-        for Index, Value in listfiles(Library.Folders.Configs) do
+        for Index, Value in pairs(listfiles(Library.Folders.Configs)) do
             local FileName = StringGSub(Value, Library.Folders.Directory .. "\\" .. ConfigFolderName .. "\\", "")
             List[Index] = FileName
         end
 
-        local IsNew = #List ~= CurrentList
+        local IsNew = #List ~= #CurrentList
 
         if not IsNew then
             for Index = 1, #List do
@@ -1035,8 +1046,8 @@ local Library do
     Library.ChangeTheme = function(self, Theme, Color)
         self.Theme[Theme] = Color
 
-        for _, Item in self.ThemeItems do
-            for Property, Value in Item.Properties do
+        for _, Item in pairs(self.ThemeItems) do
+            for Property, Value in pairs(Item.Properties) do
                 if type(Value) == "string" and Value == Theme then
                     Item.Item[Property] = Color
                 end
@@ -1221,7 +1232,7 @@ local Library do
 
         Items["Notification"].Instance.BackgroundTransparency = 1
         Items["Notification"].Instance.Size = UDim2New(0, 0, 0, 0)
-        for Index, Value in Items["Notification"].Instance:GetDescendants() do
+        for Index, Value in pairs(Items["Notification"].Instance:GetDescendants()) do
             if Value:IsA("UIStroke") then 
                 Value.Transparency = 1
             elseif Value:IsA("TextLabel") then 
@@ -1238,7 +1249,7 @@ local Library do
             
             task.wait(0.06)
 
-            for Index, Value in Items["Notification"].Instance:GetDescendants() do
+            for Index, Value in pairs(Items["Notification"].Instance:GetDescendants()) do
                 if Value:IsA("UIStroke") then
                     Tween:Create(Value, nil, {Transparency = 0}, true)
                 elseif Value:IsA("TextLabel") then
@@ -1251,7 +1262,7 @@ local Library do
             end
 
             task.delay(Duration + 0.1, function()
-                for Index, Value in Items["Notification"].Instance:GetDescendants() do
+                for Index, Value in pairs(Items["Notification"].Instance:GetDescendants()) do
                     if Value:IsA("UIStroke") then
                         Tween:Create(Value, nil, {Transparency = 1}, true)
                     elseif Value:IsA("TextLabel") then
@@ -1746,7 +1757,7 @@ local Library do
             TableInsert(Descendants, Items["ColorpickerWindow"].Instance)
 
             local NewTween
-            for Index, Value in Descendants do 
+            for Index, Value in pairs(Descendants) do 
                 local ValueIndex = Library:GetTransparencyPropertyFromItem(Value)
 
                 if not ValueIndex then 
@@ -1758,7 +1769,7 @@ local Library do
                 end
 
                 if type(ValueIndex) == "table" then
-                    for _, Property in ValueIndex do 
+                    for _, Property in pairs(ValueIndex) do 
                         NewTween = Library:FadeItem(Value, Property, Bool, Data.FadeSpeed)
                     end
                 else
@@ -1766,7 +1777,7 @@ local Library do
                 end
             end
 
-            Library:Connect(NewTween.Tween.Completed, function()
+            NewTween.Tween.Completed:Once(function()
                 Debounce = false
                 Items["ColorpickerWindow"].Instance.Visible = Bool
             end)
@@ -2194,7 +2205,7 @@ local Library do
 
                 task.wait(0.1)
 
-                for Index, Value in Items["Window"].Instance:GetDescendants() do 
+                for Index, Value in pairs(Items["Window"].Instance:GetDescendants()) do 
                     if Value:IsA("UIStroke") then
                         Tween:Create(Value, nil, {Transparency = 0}, true)
                     elseif Value:IsA("TextButton") then
@@ -2203,7 +2214,7 @@ local Library do
                     end
                 end
             else 
-                for Index, Value in Items["Window"].Instance:GetDescendants() do 
+                for Index, Value in pairs(Items["Window"].Instance:GetDescendants()) do 
                     if Value:IsA("UIStroke") then
                         Tween:Create(Value, nil, {Transparency = 1}, true)
                     elseif Value:IsA("TextButton") then
@@ -2279,7 +2290,7 @@ local Library do
         end
 
         function Keybind:SetMode(Mode)
-            for Index, Value in Modes do 
+            for Index, Value in pairs(Modes) do 
                 if Index == Mode then 
                     Value:Tween(nil, {TextColor3 = Library.Theme.Accent})
                     Value:ChangeItemTheme({TextColor3 = "Accent"})
@@ -2637,7 +2648,7 @@ local Library do
             TableInsert(Descendants, Items["MainFrame"].Instance)
 
             local NewTween
-            for Index, Value in Descendants do 
+            for Index, Value in pairs(Descendants) do 
                 local ValueIndex = Library:GetTransparencyPropertyFromItem(Value)
 
                 if not ValueIndex then 
@@ -2645,7 +2656,7 @@ local Library do
                 end
 
                 if type(ValueIndex) == "table" then
-                    for _, Property in ValueIndex do 
+                    for _, Property in pairs(ValueIndex) do 
                         NewTween = Library:FadeItem(Value, Property, Bool, Window.FadeSpeed)
                     end
                 else
@@ -2653,7 +2664,7 @@ local Library do
                 end
             end
 
-            Library:Connect(NewTween.Tween.Completed, function()
+            NewTween.Tween.Completed:Once(function()
                 Debounce = false
                 Items["MainFrame"].Instance.Visible = Bool
             end)
@@ -2895,7 +2906,7 @@ local Library do
             TableInsert(Descendants, Items["Page"].Instance)
 
             local NewTween
-            for Index, Value in Descendants do 
+            for Index, Value in pairs(Descendants) do 
                 local ValueIndex = Library:GetTransparencyPropertyFromItem(Value)
 
                 if not ValueIndex then 
@@ -2903,7 +2914,7 @@ local Library do
                 end
 
                 if type(ValueIndex) == "table" then
-                    for _, Property in ValueIndex do 
+                    for _, Property in pairs(ValueIndex) do 
                         NewTween = Library:FadeItem(Value, Property, Bool, Page.Window.FadeSpeed or 0.5)
                     end
                 else
@@ -2911,14 +2922,14 @@ local Library do
                 end
             end
 
-            Library:Connect(NewTween.Tween.Completed, function()
+            NewTween.Tween.Completed:Once(function()
                 Debounce = false
                 Items["Page"].Instance.Visible = Bool
             end)
         end
 
         Items["Inactive"]:Connect("MouseButton1Down", function()
-            for Index, Value in Page.Window.Pages do
+            for Index, Value in pairs(Page.Window.Pages) do
                 Value:Turn(Value == Page)
             end
         end)
@@ -3126,7 +3137,7 @@ local Library do
             TableInsert(Descendants, Items["Subtab"].Instance)
 
             local NewTween
-            for Index, Value in Descendants do 
+            for Index, Value in pairs(Descendants) do 
                 local ValueIndex = Library:GetTransparencyPropertyFromItem(Value)
 
                 if not ValueIndex then 
@@ -3134,7 +3145,7 @@ local Library do
                 end
 
                 if type(ValueIndex) == "table" then
-                    for _, Property in ValueIndex do 
+                    for _, Property in pairs(ValueIndex) do 
                         NewTween = Library:FadeItem(Value, Property, Bool, SubPage.Window.FadeSpeed or 0.5)
                     end
                 else
@@ -3142,14 +3153,14 @@ local Library do
                 end
             end
 
-            Library:Connect(NewTween.Tween.Completed, function()
+            NewTween.Tween.Completed:Once(function()
                 Debounce = false
                 Items["Subtab"].Instance.Visible = Bool
             end)
         end
 
         Items["Inactive"]:Connect("MouseButton1Down", function()
-            for Index, Value in SubPage.Window.SubPages do
+            for Index, Value in pairs(SubPage.Window.SubPages) do
                 Value:Turn(Value == SubPage)
             end
         end)
@@ -3487,7 +3498,7 @@ local Library do
                 TableInsert(Descendants, SubItems["Content"].Instance)
 
                 local NewTween
-                for Index, Value in Descendants do 
+                for Index, Value in pairs(Descendants) do 
                     local ValueIndex = Library:GetTransparencyPropertyFromItem(Value)
 
                     if not ValueIndex then 
@@ -3495,7 +3506,7 @@ local Library do
                     end
 
                     if type(ValueIndex) == "table" then
-                        for _, Property in ValueIndex do 
+                        for _, Property in pairs(ValueIndex) do 
                             NewTween = Library:FadeItem(Value, Property, Bool, MultiSection.Window.FadeSpeed or 0.5)
                         end
                     else
@@ -3503,7 +3514,7 @@ local Library do
                     end
                 end
 
-                Library:Connect(NewTween.Tween.Completed, function()
+                NewTween.Tween.Completed:Once(function()
                     Debounce = false
                     SubItems["Content"].Instance.Visible = Bool
                 end)
@@ -3916,6 +3927,7 @@ local Library do
                 Parent = Button.Section.Elements["Content"].Instance,
                 BorderColor3 = FromRGB(10, 10, 10),
                 AutoButtonColor = false,
+                Text = "",
                 Name = "\0",
                 Position = UDim2New(0, 0, 1, 0),
                 Size = UDim2New(1, 0, 0, 17),
@@ -4584,7 +4596,7 @@ local Library do
             TableInsert(Descendants, Items["OptionHolder"].Instance)
 
             local NewTween
-            for Index, Value in Descendants do 
+            for Index, Value in pairs(Descendants) do 
                 local ValueIndex = Library:GetTransparencyPropertyFromItem(Value)
 
                 if not ValueIndex then 
@@ -4596,7 +4608,7 @@ local Library do
                 end
 
                 if type(ValueIndex) == "table" then
-                    for _, Property in ValueIndex do 
+                    for _, Property in pairs(ValueIndex) do 
                         NewTween = Library:FadeItem(Value, Property, Bool, Dropdown.Window.FadeSpeed)
                     end
                 else
@@ -4604,7 +4616,7 @@ local Library do
                 end
             end
 
-            Library:Connect(NewTween.Tween.Completed, function()
+            NewTween.Tween.Completed:Once(function()
                 Debounce = false
                 Items["OptionHolder"].Instance.Visible = Bool
                 Items["OptionHolder"].Instance.ZIndex = Bool and 15 or 1
