@@ -483,8 +483,8 @@ local function UpdateESP()
                     bones[#bones + 1] = {torsoTop, torsoBot}
 
                     if lArm and rArm then
-                        local lArmTop = (lArm.CFrame * CFrame.new(0, 1, 0)).Position
-                        local rArmTop = (rArm.CFrame * CFrame.new(0, 1, 0)).Position
+                        local lArmTop = (lArm.CFrame * CFrame.new(0, 0.5, 0)).Position
+                        local rArmTop = (rArm.CFrame * CFrame.new(0, 0.5, 0)).Position
                         local lArmBot = (lArm.CFrame * CFrame.new(0, -1, 0)).Position
                         local rArmBot = (rArm.CFrame * CFrame.new(0, -1, 0)).Position
 
