@@ -208,13 +208,24 @@ function Arsenal:StartActor()
             return result
         end
 
-        local function AddSelectedItems()
+        local function SyncSelectedItems()
             if not InventoryData then return end
             local selected = ParseSelected()
             for cat, items in next, selected do
                 if InventoryData[cat] then
                     for itemName, _ in next, items do
                         InventoryData[cat][itemName] = InventoryData[cat][itemName] or 1
+                    end
+                end
+            end
+            for catName, catData in next, InventoryData do
+                if typeof(catData) == "table" then
+                    for itemName, _ in next, catData do
+                        local isOriginal = originalInventory[catName] and originalInventory[catName][itemName]
+                        local isSelected = selected[catName] and selected[catName][itemName]
+                        if not isOriginal and not isSelected then
+                            catData[itemName] = nil
+                        end
                     end
                 end
             end
@@ -318,9 +329,8 @@ function Arsenal:StartActor()
             else
                 if wasUnlocked then
                     wasUnlocked = false
-                    RemoveUnlockedItems()
                 end
-                AddSelectedItems()
+                SyncSelectedItems()
             end
         end)
         warn("[Arsenal] Actor fully initialized")
