@@ -284,6 +284,7 @@ Library.Unload = function(self)
         ESP:Unload()
     end
     ToolModifier:Unload()
+    ParticleAura:Unload()
     OriginalUnload(self)
 end
 
