@@ -1897,25 +1897,18 @@ local Library do
             self:Update(true)
         end
 
-        -- Combined input handler for both left and right click
+        -- Right-click context menu
         local ContextMenu = nil
         
-        Items["ColorpickerButton"]:Connect("InputBegan", function(Input)
-            -- Left click - toggle color picker
-            if Input.UserInputType == Enum.UserInputType.MouseButton1 then
-                if ContextMenu and ContextMenu.Instance then
-                    ContextMenu:Clean()
-                    ContextMenu = nil
-                end
-                Colorpicker:SetOpen(not Colorpicker.IsOpen)
-                return
+        Items["ColorpickerButton"]:Connect("MouseButton1Down", function()
+            if ContextMenu and ContextMenu.Instance then
+                ContextMenu:Clean()
+                ContextMenu = nil
             end
-            
-            -- Right click - show context menu
-            if Input.UserInputType ~= Enum.UserInputType.MouseButton2 then
-                return
-            end
-            
+            Colorpicker:SetOpen(not Colorpicker.IsOpen)
+        end)
+        
+        Items["ColorpickerButton"]:Connect("MouseButton2Down", function()
             if ContextMenu and ContextMenu.Instance then
                 ContextMenu:Clean()
                 ContextMenu = nil
