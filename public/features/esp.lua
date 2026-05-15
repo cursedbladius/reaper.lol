@@ -20,6 +20,8 @@ ESP.Settings = {
     NameType = "DisplayName",
     HealthBar = true,
     HealthColor = Color3.fromRGB(0, 255, 0),
+    HealthGradient = true,
+    HealthGradientColor = Color3.fromRGB(255, 0, 0),
     Distance = false,
     DistanceColor = Color3.fromRGB(255, 255, 255),
     Skeleton = false,
@@ -90,6 +92,16 @@ local function CreateESPObject()
     obj.HealthBarBackground = NewSquare({Thickness = 1, Color = Color3.new(0, 0, 0), Filled = true})
     obj.HealthBar = NewSquare({Thickness = 1, Color = Color3.new(0, 1, 0), Filled = true})
 
+    -- Gradient segments (used when gradient is enabled)
+    local GRADIENT_SEGMENTS = 16
+    obj.GradientLines = {}
+    for i = 1, GRADIENT_SEGMENTS do
+        obj.GradientLines[i] = Drawing.new("Line")
+        obj.GradientLines[i].Visible = false
+        obj.GradientLines[i].Thickness = 1
+        obj.GradientLines[i].Transparency = 1
+    end
+
     -- Smoothed health value for animation
     obj.SmoothedHealth = 1
 
@@ -99,9 +111,13 @@ end
 -- Destroy ESP drawings for a player
 local function DestroyESPObject(obj)
     if not obj then return end
-    for key, drawing in pairs(obj) do
-        if typeof(drawing) ~= "number" then
-            pcall(function() drawing:Remove() end)
+    for key, val in pairs(obj) do
+        if type(val) == "table" then
+            for _, drawing in ipairs(val) do
+                pcall(function() drawing:Remove() end)
+            end
+        elseif typeof(val) ~= "number" then
+            pcall(function() val:Remove() end)
         end
     end
 end
@@ -109,9 +125,13 @@ end
 -- Hide all drawings in an ESP object
 local function HideESPObject(obj)
     if not obj then return end
-    for key, drawing in pairs(obj) do
-        if typeof(drawing) ~= "number" then
-            pcall(function() drawing.Visible = false end)
+    for key, val in pairs(obj) do
+        if type(val) == "table" then
+            for _, drawing in ipairs(val) do
+                pcall(function() drawing.Visible = false end)
+            end
+        elseif typeof(val) ~= "number" then
+            pcall(function() val.Visible = false end)
         end
     end
 end
@@ -349,20 +369,49 @@ local function UpdateESP()
             obj.HealthBarBackground.Visible = true
 
             -- Colored fill (grows from bottom)
-            obj.HealthBar.Position = Vector2.new(barX, barY + (barHeight - fillHeight))
-            obj.HealthBar.Size = Vector2.new(barWidth, fillHeight)
-            local healthColor = ESP.Settings.HealthColor
-            obj.HealthBar.Color = Color3.fromRGB(
-                math.floor(healthColor.R * 255 * smoothed + 255 * (1 - smoothed)),
-                math.floor(healthColor.G * 255 * smoothed),
-                math.floor(healthColor.B * 255 * smoothed)
-            )
-            obj.HealthBar.Transparency = 1
-            obj.HealthBar.Visible = true
+            if ESP.Settings.HealthGradient and fillHeight > 0 then
+                -- Hide solid bar, use gradient segments
+                obj.HealthBar.Visible = false
+
+                local topColor = ESP.Settings.HealthColor
+                local bottomColor = ESP.Settings.HealthGradientColor
+                local segments = obj.GradientLines
+                local segCount = #segments
+                local fillTop = barY + (barHeight - fillHeight)
+
+                for i = 1, segCount do
+                    local t = (i - 1) / (segCount - 1)
+                    local lineY = math.floor(fillTop + t * (fillHeight - 1))
+
+                    -- Blend: top of fill = topColor, bottom of fill = bottomColor
+                    local r = math.floor(topColor.R * 255 * (1 - t) + bottomColor.R * 255 * t)
+                    local g = math.floor(topColor.G * 255 * (1 - t) + bottomColor.G * 255 * t)
+                    local b = math.floor(topColor.B * 255 * (1 - t) + bottomColor.B * 255 * t)
+
+                    segments[i].From = Vector2.new(barX, lineY)
+                    segments[i].To = Vector2.new(barX + barWidth, lineY)
+                    segments[i].Color = Color3.fromRGB(r, g, b)
+                    segments[i].Visible = true
+                end
+            else
+                -- Solid color mode
+                for _, line in ipairs(obj.GradientLines) do
+                    line.Visible = false
+                end
+
+                obj.HealthBar.Position = Vector2.new(barX, barY + (barHeight - fillHeight))
+                obj.HealthBar.Size = Vector2.new(barWidth, fillHeight)
+                obj.HealthBar.Color = ESP.Settings.HealthColor
+                obj.HealthBar.Transparency = 1
+                obj.HealthBar.Visible = fillHeight > 0
+            end
         else
             obj.HealthBarOutline.Visible = false
             obj.HealthBarBackground.Visible = false
             obj.HealthBar.Visible = false
+            for _, line in ipairs(obj.GradientLines) do
+                line.Visible = false
+            end
         end
     end
 end
