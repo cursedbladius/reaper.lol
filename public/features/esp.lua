@@ -93,7 +93,7 @@ local function CreateESPObject()
     obj.HealthBar = NewSquare({Thickness = 1, Color = Color3.new(0, 1, 0), Filled = true})
 
     -- Gradient segments (filled squares that tile the bar height)
-    local GRADIENT_SEGMENTS = 12
+    local GRADIENT_SEGMENTS = 24
     obj.GradientLines = {}
     for i = 1, GRADIENT_SEGMENTS do
         obj.GradientLines[i] = Drawing.new("Square")
