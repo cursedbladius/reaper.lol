@@ -128,15 +128,21 @@ OptionsSection:Slider({Name = "Render Distance", Min = 100, Max = 5000, Default 
     ESP:SetSetting("MaxDistance", Value)
 end})
 
-OptionsSection:Dropdown({Name = "ESP Type", Flag = "ESPType", Default = "Dynamic", Items = {"Dynamic", "Static", "2D", "3D"}, Callback = function(Value)
-    ESP:SetSetting("BoxType", Value)
-end})
-
-OptionsSection:Dropdown({Name = "Name Font", Flag = "ESPNameFont", Default = "Plex", Items = {"Plex", "Monospace"}, Callback = function(Value)
+local NameFontDropdown
+NameFontDropdown = OptionsSection:Dropdown({Name = "Name Font", Flag = "ESPNameFont", Default = "Plex", Items = {"Plex", "Monospace"}, Callback = function(Value)
+    if Value == nil then
+        NameFontDropdown:Set("Plex")
+        return
+    end
     ESP:SetSetting("Font", Value)
 end})
 
-OptionsSection:Dropdown({Name = "Flags Font", Flag = "ESPFlagsFont", Default = "Plex", Items = {"Plex", "Monospace"}, Callback = function(Value)
+local FlagsFontDropdown
+FlagsFontDropdown = OptionsSection:Dropdown({Name = "Flags Font", Flag = "ESPFlagsFont", Default = "Plex", Items = {"Plex", "Monospace"}, Callback = function(Value)
+    if Value == nil then
+        FlagsFontDropdown:Set("Plex")
+        return
+    end
     ESP:SetSetting("FlagsFont", Value)
 end})
 
