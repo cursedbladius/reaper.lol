@@ -309,15 +309,13 @@ function Camlock:Update()
     elseif self.Settings.Method == "Mouse" then
         local screenPos, onScreen = WorldToScreen(targetPos)
         if onScreen then
-            local center = GetScreenCenter()
             local currentMouse = GetMousePosition()
-            local targetMouse
+            local delta
             if alpha >= 1 then
-                targetMouse = screenPos
+                delta = screenPos - currentMouse
             else
-                targetMouse = currentMouse:Lerp(screenPos, alpha)
+                delta = (screenPos - currentMouse) * alpha
             end
-            local delta = targetMouse - center
             mousemoverel(delta.X, delta.Y)
         end
     end
