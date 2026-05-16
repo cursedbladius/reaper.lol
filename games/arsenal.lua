@@ -107,6 +107,12 @@ function Arsenal:StartActor()
     selectedFlag.Parent = rep
     self._selectedFlag = selectedFlag
 
+    local applyFlag = Instance.new("StringValue")
+    applyFlag.Name = "_ArsenalApply"
+    applyFlag.Value = ""
+    applyFlag.Parent = rep
+    self._applyFlag = applyFlag
+
     local actor = getactors()[1]
     if not actor then
         warn("[Arsenal] No actor found")
@@ -122,6 +128,7 @@ function Arsenal:StartActor()
 
         local unlockFlag = ReplicatedStorage:WaitForChild("_ArsenalUnlockAll", 5)
         local selectedFlag = ReplicatedStorage:WaitForChild("_ArsenalSelected", 5)
+        local applyFlag = ReplicatedStorage:WaitForChild("_ArsenalApply", 5)
 
         local InventoryData = nil
         local Loadout = nil
@@ -280,33 +287,41 @@ function Arsenal:StartActor()
         local function HookKillEffect()
             if effectHooked then return end
             local targetFunc = nil
-            -- Try to find kill effect function by line number (may shift with updates)
-            local lineTargets = {54994, 54995, 54993, 54996, 54992, 55000, 54990}
+
+            -- Method 1: Search by line number range (game updates shift this)
             for _, v in next, getgc() do
                 if typeof(v) == "function" and islclosure(v) then
                     local lineNum = debug.info(v, "l")
-                    for _, target in next, lineTargets do
-                        if lineNum == target then
-                            targetFunc = v
-                            break
+                    if lineNum and lineNum >= 54900 and lineNum <= 55100 then
+                        local ok, consts = pcall(getconstants, v)
+                        if ok and consts then
+                            for _, c in next, consts do
+                                if c == "KillEffect" or c == "killEffect" then
+                                    targetFunc = v
+                                    break
+                                end
+                            end
                         end
+                        if targetFunc then break end
                     end
-                    if targetFunc then break end
                 end
             end
-            -- Fallback: search for function with "KillEffect" or "Effect" in constants
+
+            -- Method 2: Broader search by constants pattern
             if not targetFunc then
                 for _, v in next, getgc() do
                     if typeof(v) == "function" and islclosure(v) then
                         local ok, consts = pcall(getconstants, v)
                         if ok and consts then
-                            local hasKillEffect = false
-                            local hasParticle = false
+                            local hasKE = false
+                            local hasEmit = false
+                            local hasClone = false
                             for _, c in next, consts do
-                                if c == "KillEffect" then hasKillEffect = true end
-                                if c == "ParticleEmitter" or c == "Emit" then hasParticle = true end
+                                if c == "KillEffect" or c == "killEffect" then hasKE = true end
+                                if c == "Emit" or c == "ParticleEmitter" then hasEmit = true end
+                                if c == "Clone" or c == "clone" then hasClone = true end
                             end
-                            if hasKillEffect and hasParticle then
+                            if hasKE and (hasEmit or hasClone) then
                                 targetFunc = v
                                 break
                             end
@@ -314,10 +329,30 @@ function Arsenal:StartActor()
                     end
                 end
             end
+
+            -- Method 3: Search for function that has many params and references kill effects
             if not targetFunc then
-                warn("[Arsenal] Could not find kill effect function")
+                for _, v in next, getgc() do
+                    if typeof(v) == "function" and islclosure(v) then
+                        local ok, ups = pcall(getupvalues, v)
+                        if ok and ups then
+                            for _, up in next, ups do
+                                if typeof(up) == "table" and rawget(up, "KillEffect") then
+                                    targetFunc = v
+                                    break
+                                end
+                            end
+                        end
+                        if targetFunc then break end
+                    end
+                end
+            end
+
+            if not targetFunc then
+                warn("[Arsenal] Could not find kill effect function - effects will use Value fallback")
                 return
             end
+
             effectHooked = true
             local PlayerName = LocalPlayer.Name
             local OrigKillEffect
@@ -350,6 +385,27 @@ function Arsenal:StartActor()
 
         HookLoadout()
         HookKillEffect()
+
+        -- Listen for loadout apply commands from main thread
+        if applyFlag then
+            applyFlag.Changed:Connect(function(val)
+                if val == "" then return end
+                local key, value = string.match(val, "(.+):(.+)")
+                if not key or not value then return end
+                -- Write to internal Loadout table (triggers __newindex → visual change)
+                if Loadout then
+                    Loadout[key] = value
+                else
+                    -- Fallback: set Values directly
+                    if key == "Skin" then ChangeSkin(value)
+                    elseif key == "Melee" then ChangeMelee(value)
+                    elseif key == "WeaponSkins" then ChangeGunSkin(value)
+                    elseif key == "KillEffect" then ChangeKillEffect(value)
+                    elseif key == "Announcer" then ChangeAnnouncer(value)
+                    end
+                end
+            end)
+        end
 
         local wasUnlocked = false
         local refreshTimer = 0
@@ -431,38 +487,32 @@ function Arsenal:_updateSelectedFlag()
     end
 end
 
+function Arsenal:_applyLoadout(key, value)
+    if self._applyFlag then
+        -- Clear first to ensure Changed fires even if same value
+        self._applyFlag.Value = ""
+        self._applyFlag.Value = key .. ":" .. value
+    end
+end
+
 function Arsenal:SetMeleeSkin(skinName)
-    pcall(function()
-        game:GetService("Players").LocalPlayer.Data.Melee.Value = skinName
-    end)
+    self:_applyLoadout("Melee", skinName)
 end
 
 function Arsenal:SetGunSkin(skinName)
-    pcall(function()
-        game:GetService("Players").LocalPlayer.Equipped.Value = skinName
-    end)
+    self:_applyLoadout("WeaponSkins", skinName)
 end
 
 function Arsenal:SetKillEffect(effectName)
-    pcall(function()
-        game:GetService("Players").LocalPlayer.Data.KillEffect.Value = effectName
-    end)
+    self:_applyLoadout("KillEffect", effectName)
 end
 
 function Arsenal:SetAnnouncer(announcerName)
-    pcall(function()
-        game:GetService("Players").LocalPlayer.Data.Announcer.Value = announcerName
-    end)
+    self:_applyLoadout("Announcer", announcerName)
 end
 
 function Arsenal:SetCharacterSkin(skinName)
-    pcall(function()
-        local data = game:GetService("Players").LocalPlayer.Data
-        data.Skin.Value = skinName
-        if data.Skin:FindFirstChild("Sleeve") then
-            data.Skin.Sleeve.Value = skinName
-        end
-    end)
+    self:_applyLoadout("Skin", skinName)
 end
 
 Arsenal._origFOV = nil
