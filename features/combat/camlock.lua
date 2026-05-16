@@ -16,6 +16,7 @@ Camlock.Settings = {
     SmoothEnabled = false,
     Smoothness = 50,
     Prediction = 0,
+    TeamCheck = true,
     MaxDistance = 500,
     FOV = 100,
     ShowFOV = false,
@@ -57,6 +58,14 @@ local function IsAlive(player)
     if not hum or hum.Health <= 0 then return false end
     local hrp = char:FindFirstChild("HumanoidRootPart")
     if not hrp then return false end
+    -- Team check
+    if Camlock.Settings.TeamCheck then
+        if player.Team ~= nil and LocalPlayer.Team ~= nil then
+            if player.Team == LocalPlayer.Team then
+                return false
+            end
+        end
+    end
     -- Arsenal: ignore players that haven't spawned
     if Camlock.IsArsenal then
         local wsChar = workspace:FindFirstChild(player.Name)

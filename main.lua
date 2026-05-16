@@ -45,11 +45,15 @@ local CombatSettingsSubTab = CombatTab:SubPage({Icon = "116544501716299", Column
 
 local CamlockSection = AimingSubTab:Section({Name = "Camlock", Side = 1})
 local TargetAimSection = AimingSubTab:Section({Name = "Target Aim", Side = 2})
+local ExploitsSection = AimingSubTab:Section({Name = "Exploits", Side = 2})
 local CombatOptionsSection = CombatSettingsSubTab:Section({Name = "Options", Side = 1})
-local WeaponModsSection = CombatSettingsSubTab:Section({Name = "Weapon Mods", Side = 2})
 
 CombatOptionsSection:Slider({Name = "Max Distance", Flag = "CamlockMaxDist", Default = 500, Min = 1, Max = 5000, Increment = 1, Suffix = " studs", Callback = function(Value)
     Camlock:SetSetting("MaxDistance", Value)
+end})
+
+CombatOptionsSection:Toggle({Name = "Team Check", Flag = "CamlockTeamCheck", Default = true, Callback = function(Value)
+    Camlock:SetSetting("TeamCheck", Value)
 end})
 
 CamlockSection:Toggle({Name = "Enabled", Flag = "CamlockEnabled", Default = false, Callback = function(Value)
@@ -323,27 +327,27 @@ ParticleDropdown:SetVisibility(false)
 if game.GameId == 111958650 or game.PlaceId == 286090429 then
     ArsenalAdapter:StartActor()
 
-    WeaponModsSection:Toggle({Name = "No Recoil", Flag = "ArsenalNoRecoil", Default = false, Callback = function(Value)
+    ExploitsSection:Toggle({Name = "No Recoil", Flag = "ArsenalNoRecoil", Default = false, Callback = function(Value)
         ArsenalAdapter:NoRecoil(Value)
     end})
-    WeaponModsSection:Toggle({Name = "No Spread", Flag = "ArsenalNoSpread", Default = false, Callback = function(Value)
+    ExploitsSection:Toggle({Name = "No Spread", Flag = "ArsenalNoSpread", Default = false, Callback = function(Value)
         ArsenalAdapter:NoSpread(Value)
     end})
-    WeaponModsSection:Toggle({Name = "Fast Reload", Flag = "ArsenalFastReload", Default = false, Callback = function(Value)
+    ExploitsSection:Toggle({Name = "Fast Reload", Flag = "ArsenalFastReload", Default = false, Callback = function(Value)
         ArsenalAdapter:FastReload(Value)
     end})
 
     local _fireRateEnabled = false
     local _fireRateMultiplier = 2
     local FireRateSlider
-    WeaponModsSection:Toggle({Name = "Firerate Modifier", Flag = "ArsenalFireRate", Default = false, Callback = function(Value)
+    ExploitsSection:Toggle({Name = "Firerate Modifier", Flag = "ArsenalFireRate", Default = false, Callback = function(Value)
         _fireRateEnabled = Value
         ArsenalAdapter:FireRateModifier(Value, _fireRateMultiplier)
         if FireRateSlider then
             pcall(function() FireRateSlider:SetVisibility(Value) end)
         end
     end})
-    FireRateSlider = WeaponModsSection:Slider({Name = "Firerate Multiplier", Flag = "ArsenalFireRateMult", Default = 2, Min = 1, Max = 10, Increment = 0.5, Suffix = "x", Callback = function(Value)
+    FireRateSlider = ExploitsSection:Slider({Name = "Firerate Multiplier", Flag = "ArsenalFireRateMult", Default = 2, Min = 1, Max = 10, Increment = 0.5, Suffix = "x", Callback = function(Value)
         _fireRateMultiplier = Value
         if _fireRateEnabled then
             ArsenalAdapter:FireRateModifier(true, Value)
@@ -351,7 +355,7 @@ if game.GameId == 111958650 or game.PlaceId == 286090429 then
     end})
     FireRateSlider:SetVisibility(false)
 
-    WeaponModsSection:Toggle({Name = "Infinite Ammo", Flag = "ArsenalInfAmmo", Default = false, Callback = function(Value)
+    ExploitsSection:Toggle({Name = "Infinite Ammo", Flag = "ArsenalInfAmmo", Default = false, Callback = function(Value)
         ArsenalAdapter:InfiniteAmmo(Value)
     end})
 
