@@ -190,7 +190,7 @@ end
 
 function Camlock:GetTarget()
     local settings = self.Settings
-    local screenCenter = GetScreenCenter()
+    local crosshair = GetMousePosition()
     local fov = settings.FOV
     local targeting = settings.Targeting
     local bestPlayer = nil
@@ -211,8 +211,8 @@ function Camlock:GetTarget()
         local worldDist = (hrp.Position - Camera.CFrame.Position).Magnitude
         if worldDist > settings.MaxDistance then continue end
 
-        -- FOV check is always based on screen distance from center
-        local screenDist = (screenPos - screenCenter).Magnitude
+        -- FOV check is based on screen distance from crosshair (mouse position)
+        local screenDist = (screenPos - crosshair).Magnitude
         if screenDist > fov then continue end
 
         local value
@@ -339,7 +339,7 @@ function Camlock:Initialize()
     self.Connection = RunService:BindToRenderStep("CamlockUpdate", Enum.RenderPriority.Camera.Value + 1, function()
         -- Update FOV circle
         if self.Settings.ShowFOV then
-            local center = GetTargetPoint(self.Settings.Targeting)
+            local center = GetMousePosition()
             self.FOVCircle.Position = center
             self.FOVCircle.Radius = self.Settings.FOV
             self.FOVCircle.Color = self.Settings.FOVColor
