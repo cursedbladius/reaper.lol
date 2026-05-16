@@ -25,6 +25,7 @@ Camlock.Settings = {
 Camlock.Target = nil
 Camlock.Connection = nil
 Camlock.FOVCircle = nil
+Camlock.IsArsenal = (game.PlaceId == 286090429 or game.GameId == 111958650)
 
 local HITPARTS_MAP = {
     ["Head"] = {"Head"},
@@ -56,6 +57,13 @@ local function IsAlive(player)
     if not hum or hum.Health <= 0 then return false end
     local hrp = char:FindFirstChild("HumanoidRootPart")
     if not hrp then return false end
+    -- Arsenal: ignore players that haven't spawned
+    if Camlock.IsArsenal then
+        local wsChar = workspace:FindFirstChild(player.Name)
+        if not wsChar or not wsChar:FindFirstChild("Spawned") then
+            return false
+        end
+    end
     return true
 end
 
