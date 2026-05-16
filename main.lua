@@ -48,7 +48,7 @@ local TargetAimSection = AimingSubTab:Section({Name = "Target Aim", Side = 2})
 local CombatOptionsSection = CombatSettingsSubTab:Section({Name = "Options", Side = 1})
 local WeaponModsSection = CombatSettingsSubTab:Section({Name = "Weapon Mods", Side = 2})
 
-CombatOptionsSection:Slider({Name = "Max Distance", Flag = "CamlockMaxDist", Default = 1000, Min = 1000, Max = 5000, Increment = 50, Suffix = " studs", Callback = function(Value)
+CombatOptionsSection:Slider({Name = "Max Distance", Flag = "CamlockMaxDist", Default = 500, Min = 1, Max = 5000, Increment = 1, Suffix = " studs", Callback = function(Value)
     Camlock:SetSetting("MaxDistance", Value)
 end})
 
