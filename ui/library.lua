@@ -2891,6 +2891,7 @@ local Library do
 
             Active = false,
             ColumnsData = { },
+            SubPages = { },
             Elements = { }
         }
 
@@ -3365,18 +3366,18 @@ local Library do
         end
 
         Items["Inactive"]:Connect("MouseButton1Down", function()
-            for Index, Value in pairs(SubPage.Window.SubPages) do
+            for Index, Value in pairs(SubPage.Page.SubPages) do
                 Value:Turn(Value == SubPage)
             end
         end)
 
-        if #SubPage.Window.SubPages == 0 then 
+        if #SubPage.Page.SubPages == 0 then 
             SubPage:Turn(true)
         end
 
         SubPage.Elements = Items
 
-        TableInsert(SubPage.Window.SubPages, SubPage)
+        TableInsert(SubPage.Page.SubPages, SubPage)
         return setmetatable(SubPage, Library.Pages)
     end
 
