@@ -13,7 +13,8 @@ Camlock.Settings = {
     Method = "Camera",
     Hitpart = "Head",
     Targeting = "Crosshair",
-    Smoothness = 0,
+    SmoothEnabled = false,
+    Smoothness = 50,
     Prediction = 0,
     FOV = 100,
     ShowFOV = false,
@@ -231,27 +232,32 @@ function Camlock:Update()
         end
     end
 
+    -- Calculate lerp alpha (higher smoothness = slower tracking)
+    local alpha = 1
+    if self.Settings.SmoothEnabled and self.Settings.Smoothness > 0 then
+        alpha = math.clamp(1 - (self.Settings.Smoothness / 100), 0.01, 1)
+    end
+
     -- Apply method
+    Camera = workspace.CurrentCamera
     if self.Settings.Method == "Camera" then
-        local smoothness = self.Settings.Smoothness
-        if smoothness > 0 then
-            local currentCF = Camera.CFrame
-            local targetCF = CFrame.lookAt(currentCF.Position, targetPos)
-            Camera.CFrame = currentCF:Lerp(targetCF, 1 - (smoothness / 100))
+        local currentCF = Camera.CFrame
+        local targetCF = CFrame.lookAt(currentCF.Position, targetPos)
+        if alpha >= 1 then
+            Camera.CFrame = targetCF
         else
-            Camera.CFrame = CFrame.lookAt(Camera.CFrame.Position, targetPos)
+            Camera.CFrame = currentCF:Lerp(targetCF, alpha)
         end
     elseif self.Settings.Method == "Mouse" then
         local screenPos, onScreen = WorldToScreen(targetPos)
         if onScreen then
             local center = GetScreenCenter()
-            local smoothness = self.Settings.Smoothness
+            local currentMouse = GetMousePosition()
             local targetMouse
-            if smoothness > 0 then
-                local currentMouse = GetMousePosition()
-                targetMouse = currentMouse:Lerp(screenPos, 1 - (smoothness / 100))
-            else
+            if alpha >= 1 then
                 targetMouse = screenPos
+            else
+                targetMouse = currentMouse:Lerp(screenPos, alpha)
             end
             local delta = targetMouse - center
             mousemoverel(delta.X, delta.Y)
@@ -274,7 +280,7 @@ function Camlock:Initialize()
     self.FOVCircle.Filled = false
     self.FOVCircle.Transparency = 1
 
-    self.Connection = RunService.RenderStepped:Connect(function()
+    self.Connection = RunService:BindToRenderStep("CamlockUpdate", Enum.RenderPriority.Camera.Value + 1, function()
         -- Update FOV circle
         if self.Settings.ShowFOV then
             local center = GetTargetPoint(self.Settings.Targeting)
@@ -293,7 +299,7 @@ end
 
 function Camlock:Unload()
     if self.Connection then
-        self.Connection:Disconnect()
+        pcall(function() RunService:UnbindFromRenderStep("CamlockUpdate") end)
         self.Connection = nil
     end
     if self.FOVCircle then

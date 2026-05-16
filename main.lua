@@ -91,13 +91,40 @@ TargetingDropdown = CamlockSection:Dropdown({Name = "Targeting", Flag = "Camlock
     Camlock:SetSetting("Targeting", Value)
 end})
 
-CamlockSection:Slider({Name = "Smoothness", Flag = "CamlockSmoothness", Default = 0, Min = 0, Max = 100, Increment = 1, Suffix = "%", Callback = function(Value)
+local _smoothSlider
+CamlockSection:Toggle({Name = "Smoothness", Flag = "CamlockSmoothEnabled", Default = false, Callback = function(Value)
+    Camlock:SetSetting("SmoothEnabled", Value)
+    if _smoothSlider then
+        pcall(function() _smoothSlider:SetVisibility(Value) end)
+    end
+end})
+_smoothSlider = CamlockSection:Slider({Name = "Smoothness", Flag = "CamlockSmoothness", Default = 50, Min = 1, Max = 99, Increment = 1, Suffix = "%", Callback = function(Value)
     Camlock:SetSetting("Smoothness", Value)
 end})
+_smoothSlider:SetVisibility(false)
 
-CamlockSection:Slider({Name = "Prediction", Flag = "CamlockPrediction", Default = 0, Min = 0, Max = 1, Increment = 0.01, Suffix = "s", Callback = function(Value)
-    Camlock:SetSetting("Prediction", Value)
+local _isArsenal = (game.PlaceId == 286090429 or game.GameId == 111958650)
+
+local _predSlider
+CamlockSection:Toggle({Name = "Prediction", Flag = "CamlockPredEnabled", Default = false, Callback = function(Value)
+    Camlock:SetSetting("Prediction", Value and Camlock.Settings._predValue or 0)
+    if _predSlider then
+        pcall(function() _predSlider:SetVisibility(Value) end)
+    end
 end})
+_predSlider = CamlockSection:Slider({Name = "Prediction", Flag = "CamlockPrediction", Default = 0.15, Min = 0.01, Max = 1, Increment = 0.01, Suffix = "s", Callback = function(Value)
+    Camlock.Settings._predValue = Value
+    if Library.Flags["CamlockPredEnabled"] and Library.Flags["CamlockPredEnabled"].Value then
+        Camlock:SetSetting("Prediction", Value)
+    end
+end})
+_predSlider:SetVisibility(false)
+
+if _isArsenal then
+    pcall(function()
+        Library.Flags["CamlockPredEnabled"].Element:SetVisibility(false)
+    end)
+end
 
 CamlockSection:Toggle({Name = "FOV", Flag = "CamlockShowFOV", Default = false, Callback = function(Value)
     Camlock:SetSetting("ShowFOV", Value)
