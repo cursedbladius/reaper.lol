@@ -29,6 +29,7 @@ Camlock.Settings = {
     FOV = 100,
     ShowFOV = false,
     FOVColor = Color3.fromRGB(255, 89, 89),
+    MaxDistance = 1000,
 }
 
 Camlock.Target = nil
@@ -197,6 +198,10 @@ function Camlock:GetTarget()
 
         local screenPos, onScreen = WorldToScreen(hrp.Position)
         if not onScreen then continue end
+
+        -- Max distance check (3D world distance)
+        local worldDist = (hrp.Position - Camera.CFrame.Position).Magnitude
+        if worldDist > self.Settings.MaxDistance then continue end
 
         -- FOV check is always based on screen distance from center
         local screenDist = (screenPos - screenCenter).Magnitude
