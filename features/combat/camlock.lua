@@ -159,10 +159,11 @@ end
 
 function Camlock:GetTarget()
     local settings = self.Settings
-    local referencePoint = GetTargetPoint(settings.Targeting)
+    local screenCenter = GetScreenCenter()
     local fov = settings.FOV
-    local closestPlayer = nil
-    local closestDist = fov
+    local targeting = settings.Targeting
+    local bestPlayer = nil
+    local bestValue = math.huge
 
     for _, player in ipairs(Players:GetPlayers()) do
         if player == LocalPlayer then continue end
@@ -175,14 +176,29 @@ function Camlock:GetTarget()
         local screenPos, onScreen = WorldToScreen(hrp.Position)
         if not onScreen then continue end
 
-        local dist = (screenPos - referencePoint).Magnitude
-        if dist < closestDist then
-            closestDist = dist
-            closestPlayer = player
+        -- FOV check is always based on screen distance from center
+        local screenDist = (screenPos - screenCenter).Magnitude
+        if screenDist > fov then continue end
+
+        local value
+        if targeting == "Crosshair" then
+            value = screenDist
+        elseif targeting == "Distance" then
+            value = (hrp.Position - Camera.CFrame.Position).Magnitude
+        elseif targeting == "Health" then
+            local hum = character:FindFirstChildOfClass("Humanoid")
+            value = hum and hum.Health or math.huge
+        else
+            value = screenDist
+        end
+
+        if value < bestValue then
+            bestValue = value
+            bestPlayer = player
         end
     end
 
-    return closestPlayer
+    return bestPlayer
 end
 
 function Camlock:Lock()

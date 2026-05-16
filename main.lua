@@ -83,7 +83,7 @@ HitpartDropdown = CamlockSection:Dropdown({Name = "Hitpart", Flag = "CamlockHitp
 end})
 
 local TargetingDropdown
-TargetingDropdown = CamlockSection:Dropdown({Name = "Targeting", Flag = "CamlockTargeting", Default = "Crosshair", Items = {"Crosshair", "Mouse"}, Callback = function(Value)
+TargetingDropdown = CamlockSection:Dropdown({Name = "Targeting", Flag = "CamlockTargeting", Default = "Crosshair", Items = {"Crosshair", "Distance", "Health"}, Callback = function(Value)
     if Value == nil then
         TargetingDropdown:Set("Crosshair")
         return
