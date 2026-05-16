@@ -454,31 +454,46 @@ local function UpdateESP()
                 obj.HealthBar.Transparency = 1
                 obj.HealthBar.Visible = fillHeight > 0
             end
-            if ESP.Settings.HealthValue then
-                local nrpbs2 = player:FindFirstChild("NRPBS")
-                local displayHP
-                if nrpbs2 and nrpbs2:FindFirstChild("Health") then
-                    displayHP = math.floor(nrpbs2.Health.Value)
-                else
-                    displayHP = math.floor(humanoid.Health)
-                end
-                obj.HealthValue.Text = tostring(displayHP)
-                obj.HealthValue.Font = GetFont(ESP.Settings.FlagsFont)
-                obj.HealthValue.Position = Vector2.new(barX - obj.HealthValue.TextBounds.X - 2, barY + (barHeight - fillHeight) - 6)
-                obj.HealthValue.Color = Color3.fromRGB(255, 255, 255)
-                obj.HealthValue.Transparency = 1
-                obj.HealthValue.Visible = true
-            else
-                obj.HealthValue.Visible = false
-            end
         else
             obj.HealthBarOutline.Visible = false
             obj.HealthBarBackground.Visible = false
             obj.HealthBar.Visible = false
-            obj.HealthValue.Visible = false
             for _, line in ipairs(obj.GradientLines) do
                 line.Visible = false
             end
+        end
+
+        -- ═══════════════════════ HEALTH VALUE ═══════════════════════
+        if ESP.Settings.HealthValue then
+            local nrpbs2 = player:FindFirstChild("NRPBS")
+            local displayHP
+            if nrpbs2 and nrpbs2:FindFirstChild("Health") then
+                displayHP = math.floor(nrpbs2.Health.Value)
+            else
+                displayHP = math.floor(humanoid.Health)
+            end
+            obj.HealthValue.Text = tostring(displayHP)
+            obj.HealthValue.Font = GetFont(ESP.Settings.FlagsFont)
+            local barWidth = 2
+            local padding = 4
+            local barX = bounds.X - padding - barWidth
+            local barY = bounds.Y
+            local barHeight = bounds.Height
+            local healthFractionV
+            if nrpbs2 and nrpbs2:FindFirstChild("Health") then
+                local h = nrpbs2.Health.Value
+                local maxH = nrpbs2:FindFirstChild("MaxHealth") and nrpbs2.MaxHealth.Value or 100
+                healthFractionV = math.clamp(h / maxH, 0, 1)
+            else
+                healthFractionV = math.clamp(humanoid.Health / humanoid.MaxHealth, 0, 1)
+            end
+            local fillH = math.floor(barHeight * healthFractionV)
+            obj.HealthValue.Position = Vector2.new(barX - obj.HealthValue.TextBounds.X - 2, barY + (barHeight - fillH) - 6)
+            obj.HealthValue.Color = Color3.fromRGB(255, 255, 255)
+            obj.HealthValue.Transparency = 1
+            obj.HealthValue.Visible = true
+        else
+            obj.HealthValue.Visible = false
         end
 
         -- ═══════════════════════ SKELETON ESP ═══════════════════════

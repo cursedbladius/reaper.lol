@@ -128,23 +128,15 @@ OptionsSection:Slider({Name = "Render Distance", Min = 100, Max = 5000, Default 
     ESP:SetSetting("MaxDistance", Value)
 end})
 
-local NameFontDropdown
-NameFontDropdown = OptionsSection:Dropdown({Name = "Name Font", Flag = "ESPNameFont", Default = "Plex", Items = {"Plex", "Monospace"}, Callback = function(Value)
-    if Value == nil then
-        NameFontDropdown:Set("Plex")
-        return
-    end
+OptionsSection:Dropdown({Name = "ESP Type", Flag = "ESPType", Default = "Dynamic", Items = {"Dynamic", "Static", "2D", "3D"}, Callback = function(Value)
+    ESP:SetSetting("BoxType", Value)
+end})
+
+OptionsSection:Dropdown({Name = "Name Font", Flag = "ESPNameFont", Default = "Tahoma", Items = {"Tahoma", "Monospace"}, Callback = function(Value)
     ESP:SetSetting("Font", Value)
 end})
 
-local FlagsFontDropdown
-FlagsFontDropdown = OptionsSection:Dropdown({Name = "Flags Font", Flag = "ESPFlagsFont", Default = "Plex", Items = {"Plex", "Monospace"}, Callback = function(Value)
-    if Value == nil then
-        FlagsFontDropdown:Set("Plex")
-        return
-    end
-    ESP:SetSetting("FlagsFont", Value)
-end})
+OptionsSection:Dropdown({Name = "Flags Font", Flag = "ESPFlagsFont", Default = "Default (Tahoma)", Items = {"Default (Tahoma)", "Bold", "Italic", "Source Sans"}})
 
 OptionsSection:Toggle({Name = "Occluded-check", Flag = "ESPOccluded", Default = false, Callback = function(Value)
     ESP:SetSetting("VisibleOnly", Value)
@@ -245,14 +237,14 @@ if game.GameId == 111958650 or game.PlaceId == 286090429 then
     local _fireRateEnabled = false
     local _fireRateMultiplier = 2
     local FireRateSlider
-    WeaponModsSection:Toggle({Name = "Fire Rate Modifier", Flag = "ArsenalFireRate", Default = false, Callback = function(Value)
+    WeaponModsSection:Toggle({Name = "Firerate Modifier", Flag = "ArsenalFireRate", Default = false, Callback = function(Value)
         _fireRateEnabled = Value
         ArsenalAdapter:FireRateModifier(Value, _fireRateMultiplier)
         if FireRateSlider then
             pcall(function() FireRateSlider:SetVisibility(Value) end)
         end
     end})
-    FireRateSlider = WeaponModsSection:Slider({Name = "Fire Rate Multiplier", Flag = "ArsenalFireRateMult", Default = 2, Min = 1, Max = 10, Increment = 0.5, Suffix = "x", Callback = function(Value)
+    FireRateSlider = WeaponModsSection:Slider({Name = "Firerate Multiplier", Flag = "ArsenalFireRateMult", Default = 2, Min = 1, Max = 10, Increment = 0.5, Suffix = "x", Callback = function(Value)
         _fireRateMultiplier = Value
         if _fireRateEnabled then
             ArsenalAdapter:FireRateModifier(true, Value)
