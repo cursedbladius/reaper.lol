@@ -252,6 +252,28 @@ if game.GameId == 111958650 or game.PlaceId == 286090429 then
         ArsenalAdapter:InfiniteAmmo(Value)
     end})
 
+    local _fovEnabled = false
+    local _fovValue = 90
+    local FovSlider
+    GameSection:Toggle({Name = "FOV Changer", Flag = "ArsenalFOV", Default = false, Callback = function(Value)
+        _fovEnabled = Value
+        if Value then
+            ArsenalAdapter:SetFOV(_fovValue)
+        else
+            ArsenalAdapter:ResetFOV()
+        end
+        if FovSlider then
+            pcall(function() FovSlider:SetVisibility(Value) end)
+        end
+    end})
+    FovSlider = GameSection:Slider({Name = "FOV", Flag = "ArsenalFOVValue", Default = 90, Min = 30, Max = 120, Increment = 1, Callback = function(Value)
+        _fovValue = Value
+        if _fovEnabled then
+            ArsenalAdapter:SetFOV(Value)
+        end
+    end})
+    FovSlider:SetVisibility(false)
+
     local SkinSection = GeneralSubTab:Section({Name = "Skin-Changer", Side = 2})
     SkinSection:Toggle({Name = "Unlock All Items", Flag = "ArsenalUnlockAll", Default = false, Callback = function(Value)
         ArsenalAdapter:UnlockAll(Value)

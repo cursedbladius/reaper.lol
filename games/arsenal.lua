@@ -409,7 +409,37 @@ end
 
 function Arsenal:SetCharacterSkin(skinName)
     pcall(function()
-        game:GetService("Players").LocalPlayer.Data.Skin.Value = skinName
+        local data = game:GetService("Players").LocalPlayer.Data
+        data.Skin.Value = skinName
+        if data.Skin:FindFirstChild("Sleeve") then
+            data.Skin.Sleeve.Value = skinName
+        end
+    end)
+end
+
+Arsenal._origFOV = nil
+
+function Arsenal:SetFOV(value)
+    pcall(function()
+        local settings = game:GetService("Players").LocalPlayer.Settings
+        if settings and settings:FindFirstChild("FOV") then
+            if self._origFOV == nil then
+                self._origFOV = settings.FOV.Value
+            end
+            settings.FOV.Value = value
+        end
+    end)
+end
+
+function Arsenal:ResetFOV()
+    pcall(function()
+        if self._origFOV ~= nil then
+            local settings = game:GetService("Players").LocalPlayer.Settings
+            if settings and settings:FindFirstChild("FOV") then
+                settings.FOV.Value = self._origFOV
+            end
+            self._origFOV = nil
+        end
     end)
 end
 

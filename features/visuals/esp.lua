@@ -374,7 +374,15 @@ local function UpdateESP()
 
         -- ═══════════════════════ HEALTH BAR ═══════════════════════
         if ESP.Settings.HealthBar then
-            local healthFraction = math.clamp(humanoid.Health / humanoid.MaxHealth, 0, 1)
+            local healthFraction
+            local nrpbs = player:FindFirstChild("NRPBS")
+            if nrpbs and nrpbs:FindFirstChild("Health") then
+                local h = nrpbs.Health.Value
+                local maxH = nrpbs:FindFirstChild("MaxHealth") and nrpbs.MaxHealth.Value or 100
+                healthFraction = math.clamp(h / maxH, 0, 1)
+            else
+                healthFraction = math.clamp(humanoid.Health / humanoid.MaxHealth, 0, 1)
+            end
 
             -- Smooth lerp toward actual health (0.1 = speed, lower = smoother)
             obj.SmoothedHealth = obj.SmoothedHealth + (healthFraction - obj.SmoothedHealth) * 0.1
