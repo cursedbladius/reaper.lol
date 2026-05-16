@@ -7,6 +7,16 @@ local UserInputService = game:GetService("UserInputService")
 local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
+local PI = math.pi
+local TWOPI = PI * 2
+local abs = math.abs
+local clamp = math.clamp
+local sqrt = math.sqrt
+local asin = math.asin
+local atan2 = math.atan2
+local min = math.min
+local max = math.max
+
 Camlock.Settings = {
     Enabled = false,
     StickyAim = false,
@@ -24,6 +34,17 @@ Camlock.Settings = {
 Camlock.Target = nil
 Camlock.Connection = nil
 Camlock.FOVCircle = nil
+
+-- Internal state
+local _statePitch = 0
+local _stateYaw = 0
+local _hasState = false
+local _lastTime = tick()
+local _mouseAccumX = 0
+local _mouseAccumY = 0
+local _killCooldown = false
+local _killCooldownTime = 0
+local KILL_COOLDOWN_SEC = 0.15
 
 local HITPARTS_MAP = {
     ["Head"] = {"Head"},
@@ -51,24 +72,16 @@ end
 local function IsAlive(player)
     local char = GetCharacter(player)
     if not char then return false end
-    if not char.Parent or char.Parent ~= workspace then return false end
     local hum = char:FindFirstChildOfClass("Humanoid")
     if not hum or hum.Health <= 0 then return false end
     local hrp = char:FindFirstChild("HumanoidRootPart")
     if not hrp then return false end
-    -- Reject characters teleported underground (respawning)
-    if hrp.Position.Y < -50 then return false end
-    -- Arsenal-specific: check NRPBS.Health
-    local nrpbs = player:FindFirstChild("NRPBS")
-    if nrpbs then
-        local hp = nrpbs:FindFirstChild("Health")
-        if hp and hp.Value <= 0 then return false end
-    end
     return true
 end
 
 local function WorldToScreen(pos)
-    local screenPos, onScreen = Camera:WorldToViewportPoint(pos)
+    local cam = workspace.CurrentCamera
+    local screenPos, onScreen = cam:WorldToViewportPoint(pos)
     return Vector2.new(screenPos.X, screenPos.Y), onScreen
 end
 
@@ -210,88 +223,194 @@ function Camlock:GetTarget()
     return bestPlayer
 end
 
+-- Convert CFrame to pitch/yaw angles
+local function CFrameToAngles(cf)
+    local lookVector = cf.LookVector
+    local pitch = asin(clamp(lookVector.Y, -1, 1))
+    local yaw = atan2(-lookVector.X, -lookVector.Z)
+    return pitch, yaw
+end
+
+-- Build CFrame from position + pitch/yaw
+local function AnglesToCFrame(pos, pitch, yaw)
+    local cosPitch = math.cos(pitch)
+    local lookDir = Vector3.new(
+        -math.sin(yaw) * cosPitch,
+        math.sin(pitch),
+        -math.cos(yaw) * cosPitch
+    )
+    return CFrame.lookAt(pos, pos + lookDir)
+end
+
+-- Wrap angle difference to [-pi, pi]
+local function WrapAngle(a)
+    while a > PI do a = a - TWOPI end
+    while a < -PI do a = a + TWOPI end
+    return a
+end
+
 function Camlock:Lock()
     if self.Settings.StickyAim and self.Target and IsAlive(self.Target) then
-        return -- Keep current target
+        return
     end
     self.Target = self:GetTarget()
+    _hasState = false
+    _mouseAccumX = 0
+    _mouseAccumY = 0
 end
 
 function Camlock:Unlock()
     self.Target = nil
+    _hasState = false
+    _mouseAccumX = 0
+    _mouseAccumY = 0
 end
 
-function Camlock:Update()
+function Camlock:Update(dt)
+    Camera = workspace.CurrentCamera
+    if not Camera then return end
+
     if not self.Settings.Enabled then
         self.Target = nil
+        _hasState = false
         return
     end
 
+    -- Kill cooldown: prevent flicking to new target immediately after a kill
+    if _killCooldown then
+        if (tick() - _killCooldownTime) < KILL_COOLDOWN_SEC then
+            _hasState = false
+            return
+        end
+        _killCooldown = false
+    end
+
+    -- Target validation
     if not self.Target or not IsAlive(self.Target) then
+        if self.Target then
+            -- Target just died — activate cooldown
+            _killCooldown = true
+            _killCooldownTime = tick()
+            _hasState = false
+        end
         self.Target = nil
-        -- Auto-acquire new target if not using sticky aim
         if not self.Settings.StickyAim then
             self.Target = self:GetTarget()
         end
-        if not self.Target then return end
+        if not self.Target then
+            _hasState = false
+            return
+        end
     end
 
     local character = GetCharacter(self.Target)
     if not character then
         self.Target = nil
+        _hasState = false
         return
     end
 
-    local referencePoint = GetTargetPoint(self.Settings.Targeting)
-    local targetPos = GetHitPosition(character, self.Settings.Hitpart, referencePoint)
+    local screenCenter = GetScreenCenter()
+    local targetPos = GetHitPosition(character, self.Settings.Hitpart, screenCenter)
     if not targetPos then
         self.Target = nil
+        _hasState = false
         return
     end
 
-    -- Apply prediction
+    -- Prediction: velocity * prediction_value * 0.05 (~3 frames at 60fps feel)
     local prediction = self.Settings.Prediction
     if prediction > 0 then
         local hrp = character:FindFirstChild("HumanoidRootPart")
         if hrp then
-            local velocity = hrp.AssemblyLinearVelocity or hrp.Velocity
-            targetPos = targetPos + (velocity * prediction)
-        end
-    end
-
-    -- Verify target is on screen before aiming
-    local _, targetOnScreen = WorldToScreen(targetPos)
-    if not targetOnScreen then return end
-
-    -- Calculate lerp alpha (higher smoothness = slower tracking)
-    local alpha = 1
-    if self.Settings.SmoothEnabled and self.Settings.Smoothness > 0 then
-        alpha = math.clamp(1 - (self.Settings.Smoothness / 100), 0.01, 1)
-    end
-
-    -- Apply method
-    Camera = workspace.CurrentCamera
-    if self.Settings.Method == "Camera" then
-        local currentCF = Camera.CFrame
-        local targetCF = CFrame.lookAt(currentCF.Position, targetPos)
-        if alpha >= 1 then
-            Camera.CFrame = targetCF
-        else
-            Camera.CFrame = currentCF:Lerp(targetCF, alpha)
-        end
-    elseif self.Settings.Method == "Mouse" then
-        local screenPos, onScreen = WorldToScreen(targetPos)
-        if onScreen then
-            local center = GetScreenCenter()
-            local currentMouse = GetMousePosition()
-            local targetMouse
-            if alpha >= 1 then
-                targetMouse = screenPos
-            else
-                targetMouse = currentMouse:Lerp(screenPos, alpha)
+            local vel = hrp.AssemblyLinearVelocity
+            if vel then
+                targetPos = targetPos + vel * (prediction * 0.05)
             end
-            local delta = targetMouse - center
-            mousemoverel(delta.X, delta.Y)
+        end
+    end
+
+    -- Compute target angles from camera position
+    local camPos = Camera.CFrame.Position
+    local dx = targetPos.X - camPos.X
+    local dy = targetPos.Y - camPos.Y
+    local dz = targetPos.Z - camPos.Z
+    local dist = sqrt(dx*dx + dy*dy + dz*dz)
+    if dist < 0.001 then return end
+
+    local tgtPitch = asin(clamp(dy / dist, -1, 1))
+    local tgtYaw = atan2(-dx, -dz)
+
+    -- Smoothness: frame-rate independent exponential ease-out
+    -- base = 2/smooth per 60fps frame, factor = 1 - (1-base)^(dt*60)
+    local useSmooth = self.Settings.SmoothEnabled and self.Settings.Smoothness > 1
+    local factor = 1
+    if useSmooth then
+        local base = 2 / self.Settings.Smoothness
+        factor = 1 - math.pow(1 - base, dt * 60)
+        factor = clamp(factor, 0, 1)
+    end
+
+    -- Camera method: angle-based state tracking
+    if self.Settings.Method == "Camera" then
+        if not _hasState then
+            -- Seed state from current camera
+            _statePitch, _stateYaw = CFrameToAngles(Camera.CFrame)
+            _hasState = true
+        else
+            -- Detect user mouse input (difference between live camera and what we last wrote)
+            local livePitch, liveYaw = CFrameToAngles(Camera.CFrame)
+            local userDp = livePitch - _statePitch
+            local userDy = WrapAngle(liveYaw - _stateYaw)
+            -- Clamp to filter jitter/torn reads
+            local kMaxDelta = 0.05
+            userDp = clamp(userDp, -kMaxDelta, kMaxDelta)
+            userDy = clamp(userDy, -kMaxDelta, kMaxDelta)
+            -- Apply user mouse movement to tracked state
+            _statePitch = _statePitch + userDp
+            _stateYaw = _stateYaw + userDy
+        end
+
+        -- Pull state toward target
+        if useSmooth then
+            local dp = tgtPitch - _statePitch
+            local dy = WrapAngle(tgtYaw - _stateYaw)
+            _statePitch = _statePitch + dp * factor
+            _stateYaw = _stateYaw + dy * factor
+        else
+            _statePitch = tgtPitch
+            _stateYaw = tgtYaw
+        end
+
+        -- Write camera
+        Camera.CFrame = AnglesToCFrame(camPos, _statePitch, _stateYaw)
+
+    -- Mouse method: angular error → pixel movement with accumulator
+    elseif self.Settings.Method == "Mouse" then
+        _hasState = false
+        local curPitch, curYaw = CFrameToAngles(Camera.CFrame)
+
+        local errP = tgtPitch - curPitch
+        local errY = WrapAngle(tgtYaw - curYaw)
+
+        -- Scale by smoothness factor
+        local moveP = errP * factor
+        local moveY = errY * factor
+
+        -- Convert angular movement to pixels (gain tuned for Roblox sensitivity)
+        local kGain = 200
+        local kMaxPx = 150
+
+        _mouseAccumX = clamp(_mouseAccumX + (-moveY * kGain), -kMaxPx, kMaxPx)
+        _mouseAccumY = clamp(_mouseAccumY + (-moveP * kGain), -kMaxPx, kMaxPx)
+
+        local sendX = math.floor(_mouseAccumX)
+        local sendY = math.floor(_mouseAccumY)
+
+        if sendX ~= 0 or sendY ~= 0 then
+            _mouseAccumX = _mouseAccumX - sendX
+            _mouseAccumY = _mouseAccumY - sendY
+            mousemoverel(sendX, sendY)
         end
     end
 end
@@ -311,10 +430,18 @@ function Camlock:Initialize()
     self.FOVCircle.Filled = false
     self.FOVCircle.Transparency = 1
 
+    _lastTime = tick()
     self.Connection = RunService:BindToRenderStep("CamlockUpdate", Enum.RenderPriority.Camera.Value + 1, function()
+        -- Delta time calculation (clamped like the C++ version)
+        local now = tick()
+        local dt = now - _lastTime
+        _lastTime = now
+        if dt <= 0 then dt = 0 end
+        if dt > 0.05 then dt = 0.05 end
+
         -- Update FOV circle
         if self.Settings.ShowFOV then
-            local center = GetTargetPoint(self.Settings.Targeting)
+            local center = GetScreenCenter()
             self.FOVCircle.Position = center
             self.FOVCircle.Radius = self.Settings.FOV
             self.FOVCircle.Color = self.Settings.FOVColor
@@ -323,8 +450,8 @@ function Camlock:Initialize()
             self.FOVCircle.Visible = false
         end
 
-        -- Update camlock
-        self:Update()
+        -- Update camlock with dt
+        self:Update(dt)
     end)
 end
 
