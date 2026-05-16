@@ -17,6 +17,7 @@ Camlock.Settings = {
     Smoothness = 50,
     Prediction = 0,
     TeamCheck = true,
+    OccludedCheck = false,
     MaxDistance = 500,
     FOV = 100,
     ShowFOV = false,
@@ -64,6 +65,18 @@ local function IsAlive(player)
             if player.Team == LocalPlayer.Team then
                 return false
             end
+        end
+    end
+    -- Occluded check (wall check via raycast)
+    if Camlock.Settings.OccludedCheck then
+        local origin = Camera.CFrame.Position
+        local direction = hrp.Position - origin
+        local params = RaycastParams.new()
+        params.FilterType = Enum.RaycastFilterType.Exclude
+        params.FilterDescendantsInstances = {LocalPlayer.Character, char}
+        local result = workspace:Raycast(origin, direction, params)
+        if result then
+            return false
         end
     end
     -- Arsenal: ignore players that haven't spawned

@@ -56,6 +56,10 @@ CombatOptionsSection:Toggle({Name = "Team Check", Flag = "CamlockTeamCheck", Def
     Camlock:SetSetting("TeamCheck", Value)
 end})
 
+CombatOptionsSection:Toggle({Name = "Occluded Check", Flag = "CamlockOccluded", Default = false, Callback = function(Value)
+    Camlock:SetSetting("OccludedCheck", Value)
+end})
+
 CamlockSection:Toggle({Name = "Enabled", Flag = "CamlockEnabled", Default = false, Callback = function(Value)
     Camlock:SetSetting("Enabled", Value)
     if Value then
