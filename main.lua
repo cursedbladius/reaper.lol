@@ -7,6 +7,9 @@ ESP:Initialize()
 local ToolModifier = loadstring(game:HttpGet("https://reaper-lol.pages.dev/features/visuals/tool_modifier.lua"))()
 local ParticleAura = loadstring(game:HttpGet("https://reaper-lol.pages.dev/features/visuals/particle_aura.lua"))()
 
+local Camlock = loadstring(game:HttpGet("https://reaper-lol.pages.dev/features/combat/camlock.lua"))()
+Camlock:Initialize()
+
 local GameRegistry = loadstring(game:HttpGet("https://reaper-lol.pages.dev/games/registry.lua"))()
 local DaHoodAdapter = loadstring(game:HttpGet("https://reaper-lol.pages.dev/games/da_hood.lua"))()
 local CriminalityAdapter = loadstring(game:HttpGet("https://reaper-lol.pages.dev/games/criminality.lua"))()
@@ -38,9 +41,73 @@ local MovementTab = Window:Page({Name = "Movement", Columns = 2, Subtabs = false
 local SettingsTab = Library:CreateSettingsPage(Window, Watermark, KeybindList)
 
 local CamlockSection = CombatTab:Section({Name = "Camlock", Side = 1})
-local SilentAimSection = CombatTab:Section({Name = "Silent Aim", Side = 1})
 local TargetAimSection = CombatTab:Section({Name = "Target Aim", Side = 2})
 local WeaponModsSection = CombatTab:Section({Name = "Weapon Mods", Side = 2})
+
+CamlockSection:Toggle({Name = "Enabled", Flag = "CamlockEnabled", Default = false, Callback = function(Value)
+    Camlock:SetSetting("Enabled", Value)
+    if Value then
+        Camlock:Lock()
+    else
+        Camlock:Unlock()
+    end
+end}):Keybind({Name = "Camlock Keybind", Flag = "CamlockKeybind", Default = nil, Mode = "Toggle", Callback = function(Value)
+    Camlock:SetSetting("Enabled", Value)
+    if Value then
+        Camlock:Lock()
+    else
+        Camlock:Unlock()
+    end
+end})
+
+CamlockSection:Toggle({Name = "Sticky Aim", Flag = "CamlockSticky", Default = false, Callback = function(Value)
+    Camlock:SetSetting("StickyAim", Value)
+end})
+
+local MethodDropdown
+MethodDropdown = CamlockSection:Dropdown({Name = "Method", Flag = "CamlockMethod", Default = "Camera", Items = {"Camera", "Mouse"}, Callback = function(Value)
+    if Value == nil then
+        MethodDropdown:Set("Camera")
+        return
+    end
+    Camlock:SetSetting("Method", Value)
+end})
+
+local HitpartDropdown
+HitpartDropdown = CamlockSection:Dropdown({Name = "Hitpart", Flag = "CamlockHitpart", Default = "Head", Items = {"Head", "Upper Torso", "HumanoidRootPart", "Lower Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg", "Closest Part", "Closest Point"}, Callback = function(Value)
+    if Value == nil then
+        HitpartDropdown:Set("Head")
+        return
+    end
+    Camlock:SetSetting("Hitpart", Value)
+end})
+
+local TargetingDropdown
+TargetingDropdown = CamlockSection:Dropdown({Name = "Targeting", Flag = "CamlockTargeting", Default = "Crosshair", Items = {"Crosshair", "Mouse"}, Callback = function(Value)
+    if Value == nil then
+        TargetingDropdown:Set("Crosshair")
+        return
+    end
+    Camlock:SetSetting("Targeting", Value)
+end})
+
+CamlockSection:Slider({Name = "Smoothness", Flag = "CamlockSmoothness", Default = 0, Min = 0, Max = 100, Increment = 1, Suffix = "%", Callback = function(Value)
+    Camlock:SetSetting("Smoothness", Value)
+end})
+
+CamlockSection:Slider({Name = "Prediction", Flag = "CamlockPrediction", Default = 0, Min = 0, Max = 1, Increment = 0.01, Suffix = "s", Callback = function(Value)
+    Camlock:SetSetting("Prediction", Value)
+end})
+
+CamlockSection:Toggle({Name = "FOV", Flag = "CamlockShowFOV", Default = false, Callback = function(Value)
+    Camlock:SetSetting("ShowFOV", Value)
+end}):Colorpicker({Name = "", Flag = "CamlockFOVColor", Default = Color3.fromRGB(255, 89, 89), Callback = function(Value)
+    Camlock:SetSetting("FOVColor", Value)
+end})
+
+CamlockSection:Slider({Name = "FOV Size", Flag = "CamlockFOV", Default = 100, Min = 10, Max = 500, Increment = 1, Suffix = "px", Callback = function(Value)
+    Camlock:SetSetting("FOV", Value)
+end})
 
 local PlayersSubTab = VisualsTab:SubPage({Icon = "115398113982385", Columns = 2})
 local GeneralSubTab = VisualsTab:SubPage({Icon = "100033680381365", Columns = 2})
@@ -339,6 +406,7 @@ Library.Unload = function(self)
     if ESP then
         ESP:Unload()
     end
+    Camlock:Unload()
     ToolModifier:Unload()
     ParticleAura:Unload()
     OriginalUnload(self)
