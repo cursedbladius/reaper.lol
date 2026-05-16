@@ -132,11 +132,13 @@ OptionsSection:Dropdown({Name = "ESP Type", Flag = "ESPType", Default = "Dynamic
     ESP:SetSetting("BoxType", Value)
 end})
 
-OptionsSection:Dropdown({Name = "Name Font", Flag = "ESPNameFont", Default = "Tahoma", Items = {"Tahoma", "Monospace"}, Callback = function(Value)
+OptionsSection:Dropdown({Name = "Name Font", Flag = "ESPNameFont", Default = "Tahoma", Items = {"UI", "System", "Tahoma", "Monospace", "ProggyClean"}, Callback = function(Value)
     ESP:SetSetting("Font", Value)
 end})
 
-OptionsSection:Dropdown({Name = "Flags Font", Flag = "ESPFlagsFont", Default = "Default (Tahoma)", Items = {"Default (Tahoma)", "Bold", "Italic", "Source Sans"}})
+OptionsSection:Dropdown({Name = "Flags Font", Flag = "ESPFlagsFont", Default = "Tahoma", Items = {"UI", "System", "Tahoma", "Monospace", "ProggyClean"}, Callback = function(Value)
+    ESP:SetSetting("FlagsFont", Value)
+end})
 
 OptionsSection:Toggle({Name = "Occluded-check", Flag = "ESPOccluded", Default = false, Callback = function(Value)
     ESP:SetSetting("VisibleOnly", Value)

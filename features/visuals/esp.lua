@@ -35,6 +35,7 @@ ESP.Settings = {
     ToolColor = Color3.fromRGB(255, 255, 255),
     MaxDistance = 1000,
     Font = "Tahoma",
+    FlagsFont = "Tahoma",
     VisibleOnly = false,
     TeamCheck = true,
 }
@@ -45,8 +46,11 @@ ESP.Connection = nil
 
 -- Font mapping
 local FontMap = {
+    ["UI"] = 0,
+    ["System"] = 1,
     ["Tahoma"] = 2,
     ["Monospace"] = 3,
+    ["ProggyClean"] = 1,
 }
 
 local function GetFont(name)
@@ -462,6 +466,7 @@ local function UpdateESP()
                     displayHP = math.floor(humanoid.Health)
                 end
                 obj.HealthValue.Text = tostring(displayHP)
+                obj.HealthValue.Font = GetFont(ESP.Settings.FlagsFont)
                 obj.HealthValue.Position = Vector2.new(barX - obj.HealthValue.TextBounds.X - 2, barY + (barHeight - fillHeight) - 6)
                 obj.HealthValue.Color = Color3.fromRGB(255, 255, 255)
                 obj.HealthValue.Transparency = 1
@@ -628,7 +633,7 @@ local function UpdateESP()
             obj.Distance.Text = "[" .. meters .. "m]"
             obj.Distance.Position = Vector2.new(bounds.X + bounds.Width / 2, bottomOffset)
             obj.Distance.Color = ESP.Settings.DistanceColor
-            obj.Distance.Font = GetFont(ESP.Settings.Font)
+            obj.Distance.Font = GetFont(ESP.Settings.FlagsFont)
             obj.Distance.Visible = true
             bottomOffset = bottomOffset + 14
         else
@@ -642,7 +647,7 @@ local function UpdateESP()
             obj.Tool.Text = "[" .. toolName .. "]"
             obj.Tool.Position = Vector2.new(bounds.X + bounds.Width / 2, bottomOffset)
             obj.Tool.Color = ESP.Settings.ToolColor
-            obj.Tool.Font = GetFont(ESP.Settings.Font)
+            obj.Tool.Font = GetFont(ESP.Settings.FlagsFont)
             obj.Tool.Visible = true
         else
             obj.Tool.Visible = false
