@@ -162,7 +162,12 @@ function Arsenal:StartActor()
         end
 
         local function ChangeSkin(skinname)
-            pcall(function() LocalPlayer.Data.Skin.Value = skinname end)
+            pcall(function()
+                LocalPlayer.Data.Skin.Value = skinname
+                if LocalPlayer.Data.Skin:FindFirstChild("Sleeve") then
+                    LocalPlayer.Data.Skin.Sleeve.Value = skinname
+                end
+            end)
         end
 
         local function ChangeGunSkin(name)
@@ -274,31 +279,74 @@ function Arsenal:StartActor()
 
         local function HookKillEffect()
             if effectHooked then return end
+            local targetFunc = nil
+            -- Try to find kill effect function by line number (may shift with updates)
+            local lineTargets = {54994, 54995, 54993, 54996, 54992, 55000, 54990}
             for _, v in next, getgc() do
                 if typeof(v) == "function" and islclosure(v) then
-                    if debug.info(v, "l") == 54994 then
-                        effectHooked = true
-                        local PlayerName = LocalPlayer.Name
-                        local KillEffect
-                        KillEffect = hookfunction(v, newcclosure(function(...)
-                            local args = {...}
-                            if args[11] and tostring(args[11]):find(PlayerName) then
-                                local ke = nil
-                                pcall(function()
-                                    ke = LocalPlayer.Data.KillEffect.Value
-                                end)
-                                if ke and ke ~= "" and ke ~= "None" then
-                                    args[12] = ke
-                                end
+                    local lineNum = debug.info(v, "l")
+                    for _, target in next, lineTargets do
+                        if lineNum == target then
+                            targetFunc = v
+                            break
+                        end
+                    end
+                    if targetFunc then break end
+                end
+            end
+            -- Fallback: search for function with "KillEffect" or "Effect" in constants
+            if not targetFunc then
+                for _, v in next, getgc() do
+                    if typeof(v) == "function" and islclosure(v) then
+                        local ok, consts = pcall(getconstants, v)
+                        if ok and consts then
+                            local hasKillEffect = false
+                            local hasParticle = false
+                            for _, c in next, consts do
+                                if c == "KillEffect" then hasKillEffect = true end
+                                if c == "ParticleEmitter" or c == "Emit" then hasParticle = true end
                             end
-                            return KillEffect(unpack(args))
-                        end))
-                        warn("[Arsenal] Kill effect hook active")
-                        break
+                            if hasKillEffect and hasParticle then
+                                targetFunc = v
+                                break
+                            end
+                        end
                     end
                 end
             end
+            if not targetFunc then
+                warn("[Arsenal] Could not find kill effect function")
+                return
+            end
+            effectHooked = true
+            local PlayerName = LocalPlayer.Name
+            local OrigKillEffect
+            OrigKillEffect = hookfunction(targetFunc, newcclosure(function(...)
+                local args = {...}
+                if args[11] and tostring(args[11]):find(PlayerName) then
+                    if EquippedKillEffect and EquippedKillEffect ~= "" and EquippedKillEffect ~= "None" then
+                        args[12] = EquippedKillEffect
+                    end
+                end
+                return OrigKillEffect(unpack(args))
+            end))
+            warn("[Arsenal] Kill effect hook active")
         end
+
+        -- Sync EquippedKillEffect when Value changes (from main thread SetKillEffect)
+        pcall(function()
+            if LocalPlayer:FindFirstChild("Data") and LocalPlayer.Data:FindFirstChild("KillEffect") then
+                LocalPlayer.Data.KillEffect.Changed:Connect(function(newVal)
+                    if newVal and newVal ~= "" then
+                        EquippedKillEffect = newVal
+                    end
+                end)
+                -- Initialize from current value
+                if LocalPlayer.Data.KillEffect.Value ~= "" then
+                    EquippedKillEffect = LocalPlayer.Data.KillEffect.Value
+                end
+            end
+        end)
 
         HookLoadout()
         HookKillEffect()
