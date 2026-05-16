@@ -19,6 +19,7 @@ ESP.Settings = {
     NameColor = Color3.fromRGB(255, 255, 255),
     NameType = "DisplayName",
     HealthBar = false,
+    HealthValue = false,
     HealthColor = Color3.fromRGB(0, 255, 0),
     HealthGradient = false,
     HealthGradientColor = Color3.fromRGB(255, 0, 0),
@@ -93,6 +94,7 @@ local function CreateESPObject()
     obj.HealthBarOutline = NewSquare({Thickness = 1, Color = Color3.new(0, 0, 0), Filled = true})
     obj.HealthBarBackground = NewSquare({Thickness = 1, Color = Color3.new(0, 0, 0), Filled = true})
     obj.HealthBar = NewSquare({Thickness = 1, Color = Color3.new(0, 1, 0), Filled = true})
+    obj.HealthValue = NewText({Size = 11, Center = false, Outline = true, OutlineColor = Color3.new(0, 0, 0)})
 
     -- Gradient segments (filled squares that tile the bar height)
     local GRADIENT_SEGMENTS = 24
@@ -451,10 +453,27 @@ local function UpdateESP()
                 obj.HealthBar.Transparency = 1
                 obj.HealthBar.Visible = fillHeight > 0
             end
+            if ESP.Settings.HealthValue then
+                local nrpbs2 = player:FindFirstChild("NRPBS")
+                local displayHP
+                if nrpbs2 and nrpbs2:FindFirstChild("Health") then
+                    displayHP = math.floor(nrpbs2.Health.Value)
+                else
+                    displayHP = math.floor(humanoid.Health)
+                end
+                obj.HealthValue.Text = tostring(displayHP)
+                obj.HealthValue.Position = Vector2.new(barX - obj.HealthValue.TextBounds.X - 2, barY + (barHeight - fillHeight) - 6)
+                obj.HealthValue.Color = Color3.fromRGB(255, 255, 255)
+                obj.HealthValue.Transparency = 1
+                obj.HealthValue.Visible = true
+            else
+                obj.HealthValue.Visible = false
+            end
         else
             obj.HealthBarOutline.Visible = false
             obj.HealthBarBackground.Visible = false
             obj.HealthBar.Visible = false
+            obj.HealthValue.Visible = false
             for _, line in ipairs(obj.GradientLines) do
                 line.Visible = false
             end

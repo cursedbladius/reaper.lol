@@ -82,6 +82,10 @@ end}):Colorpicker({Name = "", Flag = "ESPHealthColor", Default = Color3.fromRGB(
     ESP:SetSetting("HealthColor", Value)
 end})
 
+ESPSection:Toggle({Name = "Show Value", Flag = "ESPHealthValue", Default = false, Callback = function(Value)
+    ESP:SetSetting("HealthValue", Value)
+end})
+
 ESPSection:Toggle({Name = "Health Gradient", Flag = "ESPHealthGradient", Default = false, Callback = function(Value)
     ESP:SetSetting("HealthGradient", Value)
 end}):Colorpicker({Name = "", Flag = "ESPHealthGradientColor", Default = Color3.fromRGB(255, 0, 0), Callback = function(Value)
