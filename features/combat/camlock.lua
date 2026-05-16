@@ -219,10 +219,12 @@ function Camlock:Update()
     end
 
     if not self.Target or not IsAlive(self.Target) then
-        if self.Settings.StickyAim then
-            self.Target = nil
+        self.Target = nil
+        -- Auto-acquire new target if not using sticky aim
+        if not self.Settings.StickyAim then
+            self.Target = self:GetTarget()
         end
-        return
+        if not self.Target then return end
     end
 
     local character = GetCharacter(self.Target)

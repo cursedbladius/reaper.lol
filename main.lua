@@ -35,14 +35,17 @@ local KeybindList = Library:KeybindList()
 Watermark:SetVisibility(true)
 KeybindList:SetVisibility(false)
 
-local CombatTab = Window:Page({Name = "Combat", Columns = 2, Subtabs = false})
+local CombatTab = Window:Page({Name = "Combat", Columns = 2, Subtabs = true})
 local VisualsTab = Window:Page({Name = "Visuals", Columns = 2, Subtabs = true})
 local MovementTab = Window:Page({Name = "Movement", Columns = 2, Subtabs = false})
 local SettingsTab = Library:CreateSettingsPage(Window, Watermark, KeybindList)
 
-local CamlockSection = CombatTab:Section({Name = "Camlock", Side = 1})
-local TargetAimSection = CombatTab:Section({Name = "Target Aim", Side = 2})
-local WeaponModsSection = CombatTab:Section({Name = "Weapon Mods", Side = 2})
+local AimingSubTab = CombatTab:SubPage({Icon = "137367361548433", Columns = 2})
+local CombatSettingsSubTab = CombatTab:SubPage({Icon = "116544501716299", Columns = 2})
+
+local CamlockSection = AimingSubTab:Section({Name = "Camlock", Side = 1})
+local TargetAimSection = AimingSubTab:Section({Name = "Target Aim", Side = 2})
+local WeaponModsSection = CombatSettingsSubTab:Section({Name = "Weapon Mods", Side = 1})
 
 CamlockSection:Toggle({Name = "Enabled", Flag = "CamlockEnabled", Default = false, Callback = function(Value)
     Camlock:SetSetting("Enabled", Value)
@@ -103,8 +106,6 @@ _smoothSlider = CamlockSection:Slider({Name = "Smoothness", Flag = "CamlockSmoot
 end})
 _smoothSlider:SetVisibility(false)
 
-local _isArsenal = (game.PlaceId == 286090429 or game.GameId == 111958650)
-
 local _predSlider
 CamlockSection:Toggle({Name = "Prediction", Flag = "CamlockPredEnabled", Default = false, Callback = function(Value)
     Camlock:SetSetting("Prediction", Value and Camlock.Settings._predValue or 0)
@@ -112,7 +113,7 @@ CamlockSection:Toggle({Name = "Prediction", Flag = "CamlockPredEnabled", Default
         pcall(function() _predSlider:SetVisibility(Value) end)
     end
 end})
-_predSlider = CamlockSection:Slider({Name = "Prediction", Flag = "CamlockPrediction", Default = 0.15, Min = 0.01, Max = 1, Increment = 0.01, Suffix = "s", Callback = function(Value)
+_predSlider = CamlockSection:Slider({Name = "Prediction", Flag = "CamlockPrediction", Default = 0.15, Min = 0.1, Max = 10, Increment = 0.1, Suffix = "s", Callback = function(Value)
     Camlock.Settings._predValue = Value
     if Library.Flags["CamlockPredEnabled"] and Library.Flags["CamlockPredEnabled"].Value then
         Camlock:SetSetting("Prediction", Value)
@@ -120,21 +121,20 @@ _predSlider = CamlockSection:Slider({Name = "Prediction", Flag = "CamlockPredict
 end})
 _predSlider:SetVisibility(false)
 
-if _isArsenal then
-    pcall(function()
-        Library.Flags["CamlockPredEnabled"].Element:SetVisibility(false)
-    end)
-end
-
+local _fovSizeSlider
 CamlockSection:Toggle({Name = "FOV", Flag = "CamlockShowFOV", Default = false, Callback = function(Value)
     Camlock:SetSetting("ShowFOV", Value)
+    if _fovSizeSlider then
+        pcall(function() _fovSizeSlider:SetVisibility(Value) end)
+    end
 end}):Colorpicker({Name = "", Flag = "CamlockFOVColor", Default = Color3.fromRGB(255, 89, 89), Callback = function(Value)
     Camlock:SetSetting("FOVColor", Value)
 end})
 
-CamlockSection:Slider({Name = "FOV Size", Flag = "CamlockFOV", Default = 100, Min = 10, Max = 500, Increment = 1, Suffix = "px", Callback = function(Value)
+_fovSizeSlider = CamlockSection:Slider({Name = "FOV Size", Flag = "CamlockFOV", Default = 100, Min = 10, Max = 500, Increment = 1, Suffix = "px", Callback = function(Value)
     Camlock:SetSetting("FOV", Value)
 end})
+_fovSizeSlider:SetVisibility(false)
 
 local PlayersSubTab = VisualsTab:SubPage({Icon = "115398113982385", Columns = 2})
 local GeneralSubTab = VisualsTab:SubPage({Icon = "100033680381365", Columns = 2})
