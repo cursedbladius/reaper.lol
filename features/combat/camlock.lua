@@ -51,10 +51,19 @@ end
 local function IsAlive(player)
     local char = GetCharacter(player)
     if not char then return false end
+    if not char.Parent or char.Parent ~= workspace then return false end
     local hum = char:FindFirstChildOfClass("Humanoid")
     if not hum or hum.Health <= 0 then return false end
     local hrp = char:FindFirstChild("HumanoidRootPart")
     if not hrp then return false end
+    -- Reject characters teleported underground (respawning)
+    if hrp.Position.Y < -50 then return false end
+    -- Arsenal-specific: check NRPBS.Health
+    local nrpbs = player:FindFirstChild("NRPBS")
+    if nrpbs then
+        local hp = nrpbs:FindFirstChild("Health")
+        if hp and hp.Value <= 0 then return false end
+    end
     return true
 end
 
@@ -249,6 +258,10 @@ function Camlock:Update()
             targetPos = targetPos + (velocity * prediction)
         end
     end
+
+    -- Verify target is on screen before aiming
+    local _, targetOnScreen = WorldToScreen(targetPos)
+    if not targetOnScreen then return end
 
     -- Calculate lerp alpha (higher smoothness = slower tracking)
     local alpha = 1
