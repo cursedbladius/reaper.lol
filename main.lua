@@ -132,11 +132,11 @@ OptionsSection:Dropdown({Name = "ESP Type", Flag = "ESPType", Default = "Dynamic
     ESP:SetSetting("BoxType", Value)
 end})
 
-OptionsSection:Dropdown({Name = "Name Font", Flag = "ESPNameFont", Default = "Tahoma", Items = {"UI", "System", "Tahoma", "Monospace", "ProggyClean"}, Callback = function(Value)
+OptionsSection:Dropdown({Name = "Name Font", Flag = "ESPNameFont", Default = "Plex", Items = {"Plex", "Monospace"}, Callback = function(Value)
     ESP:SetSetting("Font", Value)
 end})
 
-OptionsSection:Dropdown({Name = "Flags Font", Flag = "ESPFlagsFont", Default = "Tahoma", Items = {"UI", "System", "Tahoma", "Monospace", "ProggyClean"}, Callback = function(Value)
+OptionsSection:Dropdown({Name = "Flags Font", Flag = "ESPFlagsFont", Default = "Plex", Items = {"Plex", "Monospace"}, Callback = function(Value)
     ESP:SetSetting("FlagsFont", Value)
 end})
 

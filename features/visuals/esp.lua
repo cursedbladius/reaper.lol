@@ -34,8 +34,8 @@ ESP.Settings = {
     Tool = false,
     ToolColor = Color3.fromRGB(255, 255, 255),
     MaxDistance = 1000,
-    Font = "Tahoma",
-    FlagsFont = "Tahoma",
+    Font = "Plex",
+    FlagsFont = "Plex",
     VisibleOnly = false,
     TeamCheck = true,
 }
@@ -46,11 +46,8 @@ ESP.Connection = nil
 
 -- Font mapping
 local FontMap = {
-    ["UI"] = 0,
-    ["System"] = 1,
-    ["Tahoma"] = 2,
+    ["Plex"] = 2,
     ["Monospace"] = 3,
-    ["ProggyClean"] = 1,
 }
 
 local function GetFont(name)
